@@ -6,6 +6,7 @@ const integrationFile = /\.integration\.test\.ts$/
 const unitFile = /\.unit\.test\.ts$/
 const unitReason = /^\s*unit-test-reason:\s*\S/
 const testRunners = /^(vite-plus\/test|vitest|node:test|bun:test|@jest\/globals)$/
+const lintModule = /^\.{1,2}\/(?:.*\/)?lint\//
 const entryPoint = /^\.\.?\/app\.js$/
 
 function pathOf(context: Context) {
@@ -124,6 +125,34 @@ const integrationTests = defineRule({
   },
 })
 
+const noLintTests = defineRule({
+  meta: { type: 'problem' },
+  create(context) {
+    const path = pathOf(context)
+    const message = 'Lint rules have no tests. Run the rule, fix what it reports and run it again.'
+
+    function checkImport(node: ESTree.Node, source: string) {
+      const testsRule = testFile.test(path) && lintModule.test(source)
+      if (testsRule || source === 'vite-plus/lint/plugins-dev') context.report({ node, message })
+    }
+
+    return {
+      Program(node) {
+        if (!path.startsWith('lint/') || !testFile.test(path)) return
+        context.report({ node: node.body[0] ?? node, message })
+      },
+      ImportDeclaration(node) {
+        checkImport(node, node.source.value)
+      },
+      ImportExpression(node) {
+        if (node.source.type === 'Literal' && typeof node.source.value === 'string') {
+          checkImport(node, node.source.value)
+        }
+      },
+    }
+  },
+})
+
 export default definePlugin({
   meta: { name: 'toolshed' },
   rules: {
@@ -139,5 +168,6 @@ export default definePlugin({
     ),
     'no-record': noRecord,
     'integration-tests': integrationTests,
+    'no-lint-tests': noLintTests,
   },
 })

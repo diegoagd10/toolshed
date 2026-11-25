@@ -35,5 +35,6 @@ The toolchain is [Vite+](https://viteplus.dev), pinned in `package.json`. `npx v
 - No `Record` or index signatures. Declare a class or model type.
 - `@Controller` classes live in `src/<feature>/controller.ts` and `@Module` classes in `src/<feature>/modules.ts`.
 - Tests are `*.integration.test.ts` and go through `app.js` or the built server. A `*.unit.test.ts` is only for a path that an integration test cannot reach, and must start with `// unit-test-reason: <which path and why>`.
+- Lint rules have no tests. Add the rule, see it fail, fix what it reports and run it again.
 
 The custom rules are in `lint/plugin.ts`. `@stylistic` formats TypeScript because the Vite+ formatter joins short chains into one line.

@@ -15,6 +15,7 @@ export default defineConfig({
       'toolshed/module-file': 'error',
       'toolshed/no-record': 'error',
       'toolshed/integration-tests': 'error',
+      'toolshed/no-lint-tests': 'error',
       'no-unexpected-multiline': 'error',
       '@stylistic/newline-per-chained-call': ['error', { ignoreChainWithDepth: 1 }],
       '@stylistic/semi': ['error', 'never'],
@@ -49,7 +50,7 @@ export default defineConfig({
     fixedExtension: false,
   },
   test: {
-    include: ['{src,lint}/**/*.{integration,unit}.test.ts'],
+    include: ['src/**/*.{integration,unit}.test.ts'],
     fsModuleCache: false,
   },
 })
