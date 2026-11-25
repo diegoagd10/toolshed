@@ -36,6 +36,7 @@ The toolchain is [Vite+](https://viteplus.dev), pinned in `package.json`. `npx v
 - No semicolons.
 - No `Record` or index signatures. Declare a class or model type.
 - `@Controller` classes live in `src/<feature>/controller.ts` and `@Module` classes in `src/<feature>/modules.ts`.
+- Data access lives in `src/<feature>/repository.ts`: the Drizzle tables, the queries and the `*Repository` classes. Tests can open the database themselves. After changing a table, run `npm run db:generate -- --name <what_changed>` and commit `drizzle/`.
 - Tests are `*.integration.test.ts` and go through `app.js` or the built server. A `*.unit.test.ts` is only for a path that an integration test cannot reach, and must start with `// unit-test-reason: <which path and why>`.
 - Coverage of the programs in `dist/`, mapped back to `src/`, is 100% for lines, branches, functions and statements. Files nobody imports count as 0%. Ignore comments have no effect.
 - Lint rules have no tests. Add the rule, see it fail, fix what it reports and run it again.

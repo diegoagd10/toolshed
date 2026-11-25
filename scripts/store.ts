@@ -6,7 +6,7 @@ import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import { createInterface } from 'node:readline'
 import { setTimeout as sleep } from 'node:timers/promises'
-import type { Key } from '../src/store/keys.js'
+import type { Key } from '../src/keys/repository.js'
 import type { Command } from '../src/store/main.js'
 
 type Created = { key: Key, secret: string }

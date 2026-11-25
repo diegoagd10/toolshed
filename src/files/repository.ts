@@ -2,40 +2,42 @@ import { randomBytes } from 'node:crypto'
 import { createWriteStream, mkdirSync } from 'node:fs'
 import { rename, rm } from 'node:fs/promises'
 import { join } from 'node:path'
-import type { DatabaseSync } from 'node:sqlite'
 import type { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
-import { z } from 'zod'
-import { StoreError } from './error.js'
+import { and, eq, gt } from 'drizzle-orm'
+import type { NodeSQLiteDatabase } from 'drizzle-orm/node-sqlite'
+import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import { StoreError } from '../store/error.js'
 
-const fileSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  mime: z.string(),
-  bytes: z.int(),
-  expiresAt: z.int(),
+export const files = sqliteTable('files', {
+  id: text()
+    .primaryKey(),
+  name: text()
+    .notNull(),
+  mime: text()
+    .notNull(),
+  bytes: integer()
+    .notNull(),
+  expiresAt: integer('expires_at')
+    .notNull(),
 })
 
-export type StoredFile = z.output<typeof fileSchema>
+export type StoredFile = typeof files.$inferSelect
 
 const lifetimeMs = 24 * 60 * 60 * 1000
 
-export class Files {
+export class FilesRepository {
+  readonly #database
   readonly #dir
   readonly #partialDir
-  readonly #insert
-  readonly #find
 
-  constructor(database: DatabaseSync, dataDir: string) {
+  constructor(database: NodeSQLiteDatabase, dataDir: string) {
+    this.#database = database
     this.#dir = join(dataDir, 'files')
     this.#partialDir = join(dataDir, 'partial')
     for (const dir of [this.#dir, this.#partialDir]) {
       mkdirSync(dir, { recursive: true, mode: 0o700 })
     }
-    this.#insert = database.prepare(`INSERT INTO files (id, name, mime, bytes, expires_at)
-      VALUES (?, ?, ?, ?, ?)`)
-    this.#find = database.prepare(`SELECT id, name, mime, bytes, expires_at AS expiresAt
-      FROM files WHERE id = ? AND expires_at > ?`)
   }
 
   async save(name: string, mime: string, content: Readable): Promise<StoredFile> {
@@ -49,7 +51,9 @@ export class Files {
       await rename(partial, path)
       const expiresAt = Date.now() + lifetimeMs
       const file = { id, name, mime, bytes: output.bytesWritten, expiresAt }
-      this.#insert.run(file.id, file.name, file.mime, file.bytes, file.expiresAt)
+      this.#database.insert(files)
+        .values(file)
+        .run()
       return file
     } catch (error) {
       await rm(partial, { force: true })
@@ -60,9 +64,11 @@ export class Files {
 
   // The path comes from a stored id, never from the caller's text.
   find(id: string) {
-    const row = this.#find.get(id, Date.now())
-    if (!row) throw new StoreError('file_not_found', 'the file does not exist or has expired')
-    const file = fileSchema.parse(row)
+    const file = this.#database.select()
+      .from(files)
+      .where(and(eq(files.id, id), gt(files.expiresAt, Date.now())))
+      .get()
+    if (!file) throw new StoreError('file_not_found', 'the file does not exist or has expired')
     return { file, path: join(this.#dir, file.id) }
   }
 }

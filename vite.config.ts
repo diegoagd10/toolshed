@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite-plus'
 
 export default defineConfig({
-  fmt: { ignorePatterns: ['**/*.ts', '**/*.md', 'package-lock.json'] },
+  fmt: { ignorePatterns: ['**/*.ts', '**/*.md', 'package-lock.json', 'drizzle/**'] },
   lint: {
     jsPlugins: ['./lint/plugin.ts', '@stylistic/eslint-plugin'],
     options: {
@@ -13,6 +13,7 @@ export default defineConfig({
     rules: {
       'toolshed/controller-file': 'error',
       'toolshed/module-file': 'error',
+      'toolshed/repository-file': 'error',
       'toolshed/no-record': 'error',
       'toolshed/integration-tests': 'error',
       'toolshed/no-lint-tests': 'error',

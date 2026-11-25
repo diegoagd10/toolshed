@@ -1,8 +1,4 @@
-import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto'
-import type { DatabaseSync } from 'node:sqlite'
-import { z } from 'zod'
-
-const secretSchema = z.object({ value: z.instanceof(Uint8Array) })
+import { createHmac, timingSafeEqual } from 'node:crypto'
 
 export type LinkTarget = { method: string, id: string }
 export type SignedLink = LinkTarget & { expiresAt: number, signature: string }
@@ -10,12 +6,8 @@ export type SignedLink = LinkTarget & { expiresAt: number, signature: string }
 export class Links {
   readonly #secret
 
-  constructor(database: DatabaseSync) {
-    database.prepare("INSERT OR IGNORE INTO secrets (name, value) VALUES ('links', ?)")
-      .run(randomBytes(32))
-    const row = database.prepare("SELECT value FROM secrets WHERE name = 'links'")
-      .get()
-    this.#secret = secretSchema.parse(row).value
+  constructor(secret: Uint8Array) {
+    this.#secret = secret
   }
 
   sign({ method, id }: LinkTarget, lifetimeMs: number): SignedLink {

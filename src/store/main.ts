@@ -1,9 +1,19 @@
 import { createReadStream } from 'node:fs'
 import { createInterface } from 'node:readline'
 import { z } from 'zod'
-import { callSchema } from './calls.js'
+import type { Call } from '../calls/repository.js'
 import { StoreError } from './error.js'
-import { openStore, type Store } from './store.js'
+import { openStore, type Store } from './repository.js'
+
+const callSchema: z.ZodType<Call> = z.strictObject({
+  at: z.string(),
+  keyId: z.string(),
+  tool: z.string(),
+  via: z.enum(['rest', 'mcp']),
+  ms: z.int(),
+  error: z.string()
+    .nullable(),
+})
 
 const commandSchema = z.discriminatedUnion('do', [
   z.strictObject({ do: z.literal('key.create'), name: z.string() }),

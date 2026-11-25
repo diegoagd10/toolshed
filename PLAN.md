@@ -15,7 +15,7 @@
 | `html` con escape automático | Es la debilidad de NestJS solo: escapar a mano. Un template tag escapa todo por defecto |
 | Cada PDF corre en un proceso hijo con tope | Un PDF de 291 KB subió el proceso a 585 MB y bloqueó el event loop. Con el tope, 5 de 5 se mataron en unos 82 ms, con un pico de 310 a 392 MB, y 5 de 5 PDFs buenos pasaron. |
 | Un key por agente, solo hash | Es el modelo de los keys de agente de treg |
-| `node:sqlite` | Viene con Node 24. No agrega dependencias nativas |
+| Drizzle sobre `node:sqlite` | `node:sqlite` viene con Node 24 y no agrega dependencias nativas. Solo lo soporta Drizzle 1.0, que está en release candidate |
 
 ## Forma de los datos
 
@@ -42,7 +42,7 @@ T0 ─┬─ T1 ── T2 ──┐
 | T0 | Base y CI | nada | raíz, `src/main.ts`, `src/config.ts` |
 | T1 | Herramientas puras | T0 | `src/tools/` |
 | T2 | Proceso aislado | T1 | `src/runner/` |
-| T3 | Keys, llamadas y archivos | T0 | `src/store/` |
+| T3 | Keys, llamadas y archivos | T0 | `src/store/`, `src/<feature>/repository.ts`, `drizzle/` |
 | T4 | API de agentes | T2, T3 | `src/agent/`, `src/main.ts` |
 | T5 | MCP | T4 | `src/mcp/`, `src/main.ts` |
 | T6 | Dashboard | T3 | `src/admin/`, `src/main.ts` |
@@ -105,8 +105,8 @@ T1 y T3 son independientes y salen de `main`. T4 y T6 tocan `src/main.ts`: entra
 
 ## T3. Keys, llamadas y archivos
 
-**Depende de:** T0. **Archivos:** `src/store/`.
-**Cambio:** SQLite con migraciones, keys con hash, registro de llamadas, archivos en disco y URLs firmadas.
+**Depende de:** T0. **Archivos:** `src/store/`, `src/<feature>/repository.ts`, `drizzle/`.
+**Cambio:** SQLite con Drizzle y migraciones, keys con hash, registro de llamadas, archivos en disco y URLs firmadas.
 **Resultado:** módulo de datos sin HTTP.
 
 - [ ] **Unit:** un key creado autentica. Revocado o alterado, no. Revocar dos veces deja el mismo estado.

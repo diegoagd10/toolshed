@@ -6,10 +6,10 @@ import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import { text } from 'node:stream/consumers'
 import { onTestFinished, test } from 'vite-plus/test'
-import type { Call } from './calls.js'
-import type { StoredFile } from './files.js'
-import type { Key } from './keys.js'
-import type { SignedLink } from './links.js'
+import type { Call } from '../calls/repository.js'
+import type { StoredFile } from '../files/repository.js'
+import type { Key } from '../keys/repository.js'
+import type { SignedLink } from '../links/links.js'
 import type { Command } from './main.js'
 
 type Answer = { result?: unknown, error?: string }
@@ -147,7 +147,9 @@ test('only the owner can read the database, even in a directory open to others',
   const dir = await dataDir()
   await mkdir(dir, { mode: 0o755 })
   await answers(dir, { do: 'key.list' })
-  assert.equal((await stat(join(dir, 'toolshed.db'))).mode & 0o777, 0o600)
+  for (const name of ['toolshed.db', 'migrate.lock']) {
+    assert.equal((await stat(join(dir, name))).mode & 0o777, 0o600)
+  }
 })
 
 test('calls are listed from the newest', async () => {
@@ -171,7 +173,8 @@ test('a call of an unknown key is rejected', async () => {
   const dir = await dataDir()
   const call: Call = { at: '', keyId: 'key_x', tool: 'qr.create', via: 'rest', ms: 1, error: null }
   const [answer] = await answers(dir, { do: 'call.record', call })
-  assert.match(answer?.error ?? '', /FOREIGN KEY/)
+  assert.match(answer?.error ?? '', /Failed query: insert into .calls./)
+  assert.deepEqual(await ask(dir, { do: 'call.list', limit: 1 }), [])
 })
 
 async function saveFile(dir: string, content: string | Uint8Array) {
@@ -232,7 +235,7 @@ test('a file that fails to be recorded leaves nothing', async () => {
   const path = join(dir, '..', 'input')
   await writeFile(path, 'x')
   const [answer] = await answers(dir, { do: 'file.save', name: 'x', mime: 'x', path })
-  assert.match(answer?.error ?? '', /no/)
+  assert.match(answer?.error ?? '', /Failed query: insert into .files./)
   assert.deepEqual(await readdir(join(dir, 'files')), [])
   assert.deepEqual(await readdir(join(dir, 'partial')), [])
 })
@@ -277,64 +280,66 @@ test('a link of another installation is rejected', async () => {
   assert.equal(await ask(await dataDir(), { do: 'link.verify', ...link }), false)
 })
 
-const version1 = `
-  CREATE TABLE keys (id TEXT PRIMARY KEY, name TEXT NOT NULL, hash TEXT NOT NULL UNIQUE,
-    prefix TEXT NOT NULL, created_at TEXT NOT NULL, last_used_at TEXT, revoked_at TEXT) STRICT;
-  CREATE TABLE calls (id INTEGER PRIMARY KEY, at TEXT NOT NULL,
-    key_id TEXT NOT NULL REFERENCES keys (id), tool TEXT NOT NULL, via TEXT NOT NULL,
-    ms INTEGER NOT NULL, error TEXT) STRICT;
-  INSERT INTO keys VALUES ('key_1', 'old', 'h', 'ts_abc', '2026-01-01T00:00:00.000Z', NULL, NULL);
-  INSERT INTO calls VALUES (7, '2026-01-01T00:00:00.000Z', 'key_1', 'qr.create', 'rest', 5, NULL);
-  PRAGMA user_version = 1;`
+const migrationsDir = join(import.meta.dirname, '../../drizzle')
+
+async function openFirstVersion(dir: string) {
+  await mkdir(dir)
+  const [first = ''] = (await readdir(migrationsDir)).toSorted()
+  const opened = await database(dir)
+  opened.exec(await readFile(join(migrationsDir, first, 'migration.sql'), 'utf8'))
+  opened.exec(`
+    CREATE TABLE __drizzle_migrations (id INTEGER PRIMARY KEY, hash text NOT NULL,
+      created_at numeric, name text, applied_at TEXT);
+    INSERT INTO __drizzle_migrations (hash, name) VALUES ('h', '${first}');
+    INSERT INTO keys VALUES ('key_1', 'old', 'h', 'ts_abc', '2026-01-01T00:00:00.000Z', NULL, NULL);
+    INSERT INTO calls VALUES (7, '2026-01-01T00:00:00.000Z', 'key_1', 'qr.create', 'rest', 5, NULL);`)
+  return opened
+}
 
 async function dump(dir: string) {
   const opened = await database(dir)
-  const tables = ['sqlite_schema', 'keys', 'calls', 'files', 'secrets']
+  const tables = ['sqlite_schema', 'keys', 'calls', 'files', 'secrets', '__drizzle_migrations']
   return tables.map((table) => opened.prepare(`SELECT * FROM ${table}`)
     .all())
 }
 
-test('a version 1 database migrates without losing rows, and opening it again changes nothing', async () => {
+test('a database of the first version migrates without losing rows, and opening it again changes nothing', async () => {
   const dir = await dataDir()
-  await mkdir(dir)
-  const opened = await database(dir)
-  opened.exec(version1)
+  const opened = await openFirstVersion(dir)
   const [key] = await ask<Key[]>(dir, { do: 'key.list' })
   const [call] = await ask<Call[]>(dir, { do: 'call.list', limit: 9 })
   assert.deepEqual([key?.id, key?.name, call?.keyId, call?.ms], ['key_1', 'old', 'key_1', 5])
-  const version = () => opened.prepare('PRAGMA user_version')
-    .get()?.user_version
-  assert.equal(version(), 2)
   const before = await dump(dir)
+  assert.equal(before.at(-1)?.length, 2)
   await answers(dir, { do: 'key.list' })
   assert.deepEqual(await dump(dir), before)
-  assert.equal(version(), 2)
+  assert.equal(opened.prepare('PRAGMA foreign_key_check')
+    .get(), undefined)
 })
 
 test('a migration that fails changes nothing', async () => {
   const dir = await dataDir()
-  await mkdir(dir)
-  const opened = await database(dir)
-  opened.exec(`${version1} CREATE TABLE secrets (other TEXT);`)
+  const opened = await openFirstVersion(dir)
+  opened.exec('CREATE TABLE secrets (other TEXT)')
   const { code, errors } = await execute(dir, [])
   assert.equal(code, 1)
-  assert.match(errors, /secrets already exists/)
+  assert.match(errors, /secrets. already exists/)
   const tables = opened.prepare("SELECT name FROM sqlite_schema WHERE type = 'table' ORDER BY name")
     .all()
     .map(({ name }) => name)
-  assert.deepEqual(tables, ['calls', 'keys', 'secrets'])
+  assert.deepEqual(tables, ['__drizzle_migrations', 'calls', 'keys', 'secrets'])
 })
 
 test('a database from a newer version is refused and left alone', async () => {
   const dir = await dataDir()
   await answers(dir, { do: 'key.list' })
   const opened = await database(dir)
-  opened.exec('PRAGMA user_version = 99')
+  opened.exec("INSERT INTO __drizzle_migrations (hash, name) VALUES ('h', '20990101000000_future')")
+  const before = await dump(dir)
   const { code, errors } = await execute(dir, [])
   assert.equal(code, 1)
-  assert.match(errors, /version 99/)
-  assert.equal(opened.prepare('PRAGMA user_version')
-    .get()?.user_version, 99)
+  assert.match(errors, /20990101000000_future/)
+  assert.deepEqual(await dump(dir), before)
 })
 
 test('two processes that open a new database at once both work', async () => {
