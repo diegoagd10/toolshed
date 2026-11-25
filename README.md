@@ -21,7 +21,7 @@ Both ports answer `GET /health`.
 
 ```sh
 npm run check     # format, lint, types, build, tests and coverage; needs ports 4400 and 4401 free
-scripts/rss.sh    # idle memory of the build; Linux only
+scripts/memory.sh # idle anonymous memory of the build, up to 100 MB; Linux only
 ```
 
 The toolchain is [Vite+](https://viteplus.dev), pinned in `package.json`. `npx vp check --fix` fixes style; run it twice if it reports errors, since one fix can enable another. `npm test` runs the built `dist/main.js`, so build first.

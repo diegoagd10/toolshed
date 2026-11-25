@@ -11,7 +11,7 @@ for run in 1 2 3 4 5; do
   node dist/main.js &
   pid=$!
   sleep 10
-  kb=$(awk '/^VmRSS:/ { print $2 }' "/proc/$pid/status")
+  kb=$(awk '/^RssAnon:/ { print $2 }' "/proc/$pid/status")
   kill "$pid"
   wait "$pid"
   pid=
