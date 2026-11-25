@@ -7,7 +7,7 @@ A private, single-owner server of tools for agents. One process listens on two p
 Needs Node 24 or newer.
 
 ```sh
-npm ci
+npm ci            # .npmrc turns off install scripts; better-sqlite3 ships prebuilt binaries
 cp .env.example .env   # then edit it
 npm run build
 npm start
@@ -23,6 +23,7 @@ Both ports answer `GET /health`.
 npm run check     # format, lint, types, build, tests and coverage; needs ports 4400 and 4401 free
 scripts/memory.sh # idle anonymous memory of the build, up to 100 MB; Linux only
 node scripts/tools.ts  # the built tools against qpdf, poppler and zbar; pass your own PDFs as arguments
+node scripts/store.ts  # the built store: secrets on disk, kill -9, simultaneous openings and speed
 ```
 
 The toolchain is [Vite+](https://viteplus.dev), pinned in `package.json`. `npx vp check --fix` fixes style; run it twice if it reports errors, since one fix can enable another. `npm test` runs the built `dist/main.js`, so build first.
@@ -35,6 +36,7 @@ The toolchain is [Vite+](https://viteplus.dev), pinned in `package.json`. `npx v
 - No semicolons.
 - No `Record` or index signatures. Declare a class or model type.
 - `@Controller` classes live in `src/<feature>/controller.ts` and `@Module` classes in `src/<feature>/modules.ts`.
+- Data access lives in `src/<feature>/repository.ts`: the Drizzle tables, the queries and the `*Repository` classes. Tests can open the database themselves. After changing a table, run `npm run db:generate -- --name <what_changed>` and commit `drizzle/`.
 - Tests are `*.integration.test.ts` and go through `app.js` or the built server. A `*.unit.test.ts` is only for a path that an integration test cannot reach, and must start with `// unit-test-reason: <which path and why>`.
 - Coverage of the programs in `dist/`, mapped back to `src/`, is 100% for lines, branches, functions and statements. Files nobody imports count as 0%. Ignore comments have no effect.
 - Lint rules have no tests. Add the rule, see it fail, fix what it reports and run it again.

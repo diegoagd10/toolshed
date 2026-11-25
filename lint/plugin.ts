@@ -7,6 +7,8 @@ const unitFile = /\.unit\.test\.ts$/
 const unitReason = /^\s*unit-test-reason:\s*\S/
 const testRunners = /^(vite-plus\/test|vitest|node:test|bun:test|@jest\/globals)$/
 const lintModule = /^\.{1,2}\/(?:.*\/)?lint\//
+const databaseModules = /^(drizzle-orm|better-sqlite3|node:sqlite)(\/|$)/
+const repositoryFile = /^src\/[^/]+\/repository\.ts$/
 const entryPoint = /^\.\.?\/app\.js$/
 
 function pathOf(context: Context) {
@@ -153,6 +155,42 @@ const noLintTests = defineRule({
   },
 })
 
+const repositoryFileRule = defineRule({
+  meta: { type: 'problem' },
+  create(context) {
+    const path = pathOf(context)
+    const message = 'Data access belongs in src/<feature>/repository.ts.'
+    const isFree = !path.startsWith('src/') || testFile.test(path) || repositoryFile.test(path)
+
+    function checkImport(node: ESTree.Node, source: string) {
+      if (!isFree && databaseModules.test(source)) context.report({ node, message })
+    }
+
+    function checkClass(node: ESTree.Class) {
+      if (!isFree && node.id?.name.endsWith('Repository')) context.report({ node: node.id, message })
+    }
+
+    return {
+      ImportDeclaration(node) {
+        checkImport(node, node.source.value)
+      },
+      ExportNamedDeclaration(node) {
+        if (node.source) checkImport(node, node.source.value)
+      },
+      ExportAllDeclaration(node) {
+        checkImport(node, node.source.value)
+      },
+      ImportExpression(node) {
+        if (node.source.type === 'Literal' && typeof node.source.value === 'string') {
+          checkImport(node, node.source.value)
+        }
+      },
+      ClassDeclaration: checkClass,
+      ClassExpression: checkClass,
+    }
+  },
+})
+
 export default definePlugin({
   meta: { name: 'toolshed' },
   rules: {
@@ -166,6 +204,7 @@ export default definePlugin({
       /^src\/[^/]+\/modules\.ts$/,
       'src/<feature>/modules.ts',
     ),
+    'repository-file': repositoryFileRule,
     'no-record': noRecord,
     'integration-tests': integrationTests,
     'no-lint-tests': noLintTests,
