@@ -3,6 +3,7 @@ on:
   push:
     branches: [main]
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
 permissions:
   contents: read
 jobs:
@@ -16,3 +17,43 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run check
+
+  ready:
+    needs: check
+    if: >-
+      github.event_name == 'pull_request' &&
+      !github.event.pull_request.draft &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      checks: read
+      contents: read
+      pull-requests: write
+      statuses: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      PR: ${{ github.event.pull_request.number }}
+      SHA: ${{ github.event.pull_request.head.sha }}
+      OWNER: ${{ github.repository_owner }}
+    steps:
+      - name: Tell the owner that the pull request is ready to merge
+        run: |
+          while true; do
+            pr=$(gh pr view "$PR" --json state,headRefOid,mergeable,statusCheckRollup)
+            state=$(jq -r --arg sha "$SHA" '
+              [.statusCheckRollup[] | select(.name != "ready") | .conclusion // .state // "" | ascii_upcase] as $checks
+              | if .state != "OPEN" then "closed"
+                elif .headRefOid != $sha then "outdated"
+                elif .mergeable == "CONFLICTING" then "conflicts"
+                elif any($checks[]; IN("FAILURE", "ERROR", "CANCELLED", "TIMED_OUT", "ACTION_REQUIRED", "STARTUP_FAILURE", "STALE")) then "failed"
+                elif .mergeable != "MERGEABLE" or any($checks[]; IN("", "PENDING", "EXPECTED")) then "waiting"
+                else "ready" end' <<< "$pr")
+            echo "$state"
+            [ "$state" = waiting ] || break
+            sleep 15
+          done
+          [ "$state" = ready ] || exit 0
+          gh pr comment "$PR" --body "@$OWNER this pull request is ready to merge. Every check passed on $SHA and there are no conflicts."
