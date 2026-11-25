@@ -48,6 +48,7 @@ export default defineConfig({
     target: 'node24',
     dts: false,
     fixedExtension: false,
+    sourcemap: true,
   },
   test: {
     include: ['src/**/*.{integration,unit}.test.ts'],

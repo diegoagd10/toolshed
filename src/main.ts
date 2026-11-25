@@ -10,7 +10,6 @@ try {
   const running = await start(config, { agent: 4400, admin: 4401 })
   void stopped.then(running.close)
 } catch (error) {
-  const message = error instanceof Error ? error.message : String(error)
-  console.error(error instanceof ConfigError ? message : `Could not start: ${message}`)
+  console.error(error instanceof ConfigError ? error.message : `Could not start: ${String(error)}`)
   process.exitCode = 1
 }

@@ -20,7 +20,7 @@ Both ports answer `GET /health`.
 ## Check
 
 ```sh
-npm run check     # format, lint, types, build and tests; needs ports 4400 and 4401 free
+npm run check     # format, lint, types, build, tests and coverage; needs ports 4400 and 4401 free
 scripts/rss.sh    # idle memory of the build; Linux only
 ```
 
@@ -35,6 +35,7 @@ The toolchain is [Vite+](https://viteplus.dev), pinned in `package.json`. `npx v
 - No `Record` or index signatures. Declare a class or model type.
 - `@Controller` classes live in `src/<feature>/controller.ts` and `@Module` classes in `src/<feature>/modules.ts`.
 - Tests are `*.integration.test.ts` and go through `app.js` or the built server. A `*.unit.test.ts` is only for a path that an integration test cannot reach, and must start with `// unit-test-reason: <which path and why>`.
+- Coverage of `dist/main.js`, mapped back to `src/`, is 100% for lines, branches, functions and statements. Files nobody imports count as 0%. Ignore comments have no effect.
 - Lint rules have no tests. Add the rule, see it fail, fix what it reports and run it again.
 
 The custom rules are in `lint/plugin.ts`. `@stylistic` formats TypeScript because the Vite+ formatter joins short chains into one line.
