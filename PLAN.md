@@ -87,7 +87,7 @@ T1 y T3 son independientes y salen de `main`. T4 y T6 tocan `src/main.ts`: entra
 - [ ] **Unit:** unir conserva el orden. Separar `["1-2","5"]` da dos archivos. Los rangos `0`, `3-2`, `9` de 5 páginas y `a` dan `bad_range` o `invalid_input`. Un archivo que no es PDF o está cifrado da `not_a_pdf`.
 - [ ] **Unit:** cada `example` de `TOOLS` cumple su propio schema.
 - [ ] **Live:** un script genera los archivos. `zbarimg` lee el texto exacto del QR, con acentos y con 2000 caracteres. `pdftotext` lee `A1,A2,B1,B2,B3`. `qpdf --check` termina en 0 en todas las salidas.
-- [ ] **Live:** repite con tres PDFs reales tuyos: un escaneo, uno con formularios y uno de más de 100 páginas. `pdfinfo` da el número de páginas esperado.
+- [ ] **Live:** repite con tres PDFs reales públicos, que descarga el agente: un escaneo, uno con formularios y uno de más de 100 páginas. `pdfinfo` da el número de páginas esperado.
 - [ ] **Perf:** unir dos PDFs de 10 MB con contenido copiado. La salida pesa más de 19 MB. Falla con mediana mayor a 500 ms.
 
 ## T2. Proceso aislado
@@ -140,6 +140,7 @@ T1 y T3 son independientes y salen de `main`. T4 y T6 tocan `src/main.ts`: entra
 - [ ] **Live:** el cliente oficial, en 2025-11-25 y en 2026-07-28, sube, une, separa y descarga.
 - [ ] **Live:** `tools/list` sin el header `MCP-Protocol-Version` da 200. Cubre el error reportado de Grok Bot.
 - [ ] **Live:** conecta Claude Code con `claude mcp add --transport http` en una configuración temporal. Pide "une estos dos PDFs" y revisa el resultado con `pdftotext`.
+- [ ] **Live:** el agente repite con los PDFs reales de T1, sin ayuda tuya: con un key de prueba los sube, une, separa y descarga por MCP. `pdfinfo` da las páginas esperadas y `qpdf --check` termina en 0. Al final revoca el key.
 - [ ] **Perf:** tamaño de `tools/list`. Falla arriba de 600 caracteres por herramienta.
 
 ## T6. Dashboard
