@@ -1,5 +1,6 @@
 import { PDFDocument } from 'pdf-lib'
 import { z } from 'zod'
+import { prune } from './prune.js'
 import { defineTool, fileId, type ToolContext, ToolError } from './tool.js'
 
 const mime = 'application/pdf'
@@ -21,7 +22,7 @@ export const pdfMerge = defineTool({
       const source = await load(context, id)
       await append(merged, source, source.getPageIndices())
     }
-    return [{ name: 'merged.pdf', mime, data: await merged.save() }]
+    return [{ name: 'merged.pdf', mime, data: await save(merged) }]
   },
 })
 
@@ -46,7 +47,7 @@ export const pdfSplit = defineTool({
     for (const { range, pages } of parts) {
       const part = await PDFDocument.create()
       await append(part, source, pages)
-      outputs.push({ name: `pages-${range}.pdf`, mime, data: await part.save() })
+      outputs.push({ name: `pages-${range}.pdf`, mime, data: await save(part) })
     }
     return outputs
   },
@@ -65,6 +66,11 @@ async function load(context: ToolContext, id: string) {
 
 async function append(target: PDFDocument, source: PDFDocument, indices: number[]) {
   for (const page of await target.copyPages(source, indices)) target.addPage(page)
+}
+
+async function save(document: PDFDocument) {
+  prune(document)
+  return document.save()
 }
 
 function pagesOf(range: string, count: number) {

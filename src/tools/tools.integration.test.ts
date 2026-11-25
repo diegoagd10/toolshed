@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { json, text } from 'node:stream/consumers'
 import jsqr from 'jsqr'
-import { PDFDocument } from 'pdf-lib'
+import { PDFDocument, PDFName, PDFRawStream, PDFString } from 'pdf-lib'
 import { PNG } from 'pngjs'
 import { onTestFinished, test } from 'vite-plus/test'
 import type { Job, JobFile, JobResult } from './main.js'
@@ -122,6 +122,40 @@ test('pdf.split gives one file per range, and repeated ranges do not collide', a
   const files = await succeeds('pdf.split', { file: 'file_a', ranges: ['1-2', '5', '5'] }, [a])
   assert.deepEqual(files.map(({ name }) => name), ['pages-1-2.pdf', 'pages-5.pdf', 'pages-5.pdf'])
   assert.deepEqual(await Promise.all(files.map(widthsOf)), [[101, 102], [105], [105]])
+})
+
+test('pdf.split leaves nothing of the other pages in the file', async () => {
+  const document = await PDFDocument.create()
+  const shown = document.addPage([101, 100])
+  const hidden = document.addPage([102, 100])
+  hidden.node.addContentStream(document.context.register(document.context.stream('% SECRET-CONTENT')))
+  const link = { Type: 'Annot', Subtype: 'Link', Rect: [0, 0, 9, 9], Dest: [hidden.ref, 'Fit'] }
+  shown.node.addAnnot(document.context.register(document.context.obj(link)))
+  const action = { Type: 'Annot', Subtype: 'Link', A: { S: 'GoTo', D: [hidden.ref, 'Fit'] } }
+  shown.node.addAnnot(document.context.register(document.context.obj(action)))
+  shown.node.set(PDFName.of('B'), document.context.obj([0, hidden.ref]))
+  shown.node.set(PDFName.of('Empty'), document.context.obj([]))
+  const field = document.getForm()
+    .createTextField('name')
+  field.setText('SECRET-VALUE')
+  field.addToPage(hidden)
+  field.addToPage(shown)
+  field.acroField.dict.set(PDFName.of('TU'), PDFString.of('SECRET-LABEL'))
+  const source = { id: 'file_a', data: await document.save() }
+
+  const [file] = await succeeds('pdf.split', { file: 'file_a', ranges: ['1'] }, [source])
+  assert.ok(file)
+  assert.deepEqual(await widthsOf(file), [101])
+  const output = await PDFDocument.load(await readFile(file.path))
+  const objects = output.context.enumerateIndirectObjects()
+    .map(([, object]) => object)
+  const text = objects.map((object) => object.toString())
+    .join('\n')
+  const contents = objects.filter((object) => object instanceof PDFRawStream)
+    .map((stream) => stream.getContentsString())
+  assert.equal(text.match(/\/Type \/Page\b/g)?.length, 1)
+  assert.doesNotMatch(text, /SECRET-LABEL/)
+  assert.doesNotMatch(contents.join('\n'), /SECRET-CONTENT/)
 })
 
 for (const range of ['0', '3-2', '9', '1-6', '0-1']) {
