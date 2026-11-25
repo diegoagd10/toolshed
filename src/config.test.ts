@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { test } from 'node:test';
+import { test } from 'vite-plus/test';
 import { inspect } from 'node:util';
 import { ConfigError, parseConfig } from './config.js';
 

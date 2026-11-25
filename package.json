@@ -3,16 +3,12 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "engines": {
-    "node": ">=24"
-  },
   "scripts": {
-    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "build": "vp pack",
     "start": "node --env-file-if-exists=.env dist/main.js",
-    "typecheck": "tsc --noEmit",
-    "lint": "biome ci .",
-    "test": "rm -rf dist-test && tsc && node --test --test-force-exit \"dist-test/**/*.test.js\"",
-    "check": "npm run typecheck && npm run lint && npm run build && npm run test"
+    "lint": "vp check",
+    "test": "vp test run",
+    "check": "npm run lint && npm run build && npm run test"
   },
   "dependencies": {
     "@nestjs/common": "12.6.2",
@@ -23,8 +19,10 @@
     "zod": "4.6.7"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.6.9",
     "@types/node": "24.19.4",
-    "typescript": "7.0.2"
+    "vite-plus": "1.8.0"
+  },
+  "engines": {
+    "node": ">=24"
   }
 }

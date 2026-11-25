@@ -3,7 +3,7 @@ import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { createServer } from 'node:net';
 import { join } from 'node:path';
-import { test } from 'node:test';
+import { onTestFinished, test } from 'vite-plus/test';
 import { setTimeout as sleep } from 'node:timers/promises';
 
 const env = {
@@ -13,7 +13,7 @@ const env = {
 };
 
 function run(env: Record<string, string>) {
-  const child = spawn(process.execPath, [join(import.meta.dirname, 'main.js')], {
+  const child = spawn(process.execPath, [join(import.meta.dirname, '../dist/main.js')], {
     env,
     stdio: ['ignore', 'pipe', 'pipe'],
     timeout: 15_000,
@@ -32,7 +32,7 @@ function run(env: Record<string, string>) {
 
 async function healthy(port: number, exited: Promise<{ output: string }>) {
   let stopped: string | undefined;
-  exited.then(({ output }) => {
+  void exited.then(({ output }) => {
     stopped = output;
   });
   for (let attempt = 0; attempt < 100; attempt++) {
@@ -56,9 +56,9 @@ test('a bad configuration exits non-zero with one line and no values', async () 
 });
 
 for (const signal of ['SIGTERM', 'SIGINT'] as const) {
-  test(`${signal} exits 0`, async (t) => {
+  test(`${signal} exits 0`, async () => {
     const { child, exited } = run(env);
-    t.after(() => child.kill('SIGKILL'));
+    onTestFinished(() => void child.kill('SIGKILL'));
     await healthy(4400, exited);
     await healthy(4401, exited);
     child.kill(signal);
@@ -66,11 +66,11 @@ for (const signal of ['SIGTERM', 'SIGINT'] as const) {
   });
 }
 
-test('a taken port exits non-zero and names it', async (t) => {
+test('a taken port exits non-zero and names it', async () => {
   const server = createServer();
   server.listen(4401);
   await once(server, 'listening');
-  t.after(() => server.close());
+  onTestFinished(() => void server.close());
   const { code, output } = await run(env).exited;
   assert.equal(code, 1);
   assert.match(output, /EADDRINUSE.*4401/);

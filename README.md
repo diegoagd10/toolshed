@@ -20,6 +20,8 @@ Both ports answer `GET /health`.
 ## Check
 
 ```sh
-npm run check     # types, lint, build and tests; needs ports 4400 and 4401 free
+npm run check     # format, lint, types, build and tests; needs ports 4400 and 4401 free
 scripts/rss.sh    # idle memory of the build; Linux only
 ```
+
+The toolchain is [Vite+](https://viteplus.dev), pinned in `package.json`. `npx vp check --fix` formats and fixes lint. `npm test` runs the built `dist/main.js`, so build first.

@@ -27,7 +27,7 @@ class AdminController {
 class AdminModule {}
 
 export type Ports = { agent: number; admin: number };
-export type Running = { ports: Ports; close(): Promise<void> };
+export type Running = { ports: Ports; close: () => Promise<void> };
 
 export async function start(_config: Config, ports: Ports): Promise<Running> {
   const agent = await createApp(AgentModule);

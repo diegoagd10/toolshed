@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
 import { type AddressInfo, createServer } from 'node:net';
-import { test } from 'node:test';
+import { onTestFinished, test } from 'vite-plus/test';
 import { start } from './app.js';
 import { parseConfig } from './config.js';
 
@@ -24,9 +24,9 @@ async function occupy(port: number) {
   };
 }
 
-test('both ports answer health and 404 anything else', async (t) => {
+test('both ports answer health and 404 anything else', async () => {
   const running = await start(config, { agent: 0, admin: 0 });
-  t.after(running.close);
+  onTestFinished(() => running.close());
   assert.notEqual(running.ports.agent, running.ports.admin);
   for (const port of [running.ports.agent, running.ports.admin]) {
     const health = await fetch(`http://localhost:${port}/health`);
