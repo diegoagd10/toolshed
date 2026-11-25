@@ -115,7 +115,7 @@ test('using a key sets lastUsedAt, and again only after a minute', async () => {
     { do: 'key.authenticate', secret: attempt },
     { do: 'key.list' },
   )
-    .then(([, list]) => (list?.result as Key[])[0]?.lastUsedAt)
+    .then(([, list]) => (list?.result as Key[] | undefined)?.[0]?.lastUsedAt)
   const first = await use(secret)
   assert.ok(first && Math.abs(Date.now() - Date.parse(first)) < 10_000)
   assert.equal(await use(secret), first)
