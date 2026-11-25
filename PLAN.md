@@ -15,7 +15,7 @@
 | `html` con escape automático | Es la debilidad de NestJS solo: escapar a mano. Un template tag escapa todo por defecto |
 | Cada PDF corre en un proceso hijo con tope | Un PDF de 291 KB subió el proceso a 585 MB y bloqueó el event loop. Con el tope, 5 de 5 se mataron en unos 82 ms, con un pico de 310 a 392 MB, y 5 de 5 PDFs buenos pasaron. |
 | Un key por agente, solo hash | Es el modelo de los keys de agente de treg |
-| Drizzle sobre `node:sqlite` | `node:sqlite` viene con Node 24 y no agrega dependencias nativas. Solo lo soporta Drizzle 1.0, que está en release candidate |
+| Drizzle estable sobre `better-sqlite3` | Drizzle 0.45 no soporta `node:sqlite`. `better-sqlite3` es nativo, pero trae binarios para Linux y Alpine, así que no compila al instalar |
 
 ## Forma de los datos
 

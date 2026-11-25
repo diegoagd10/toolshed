@@ -7,7 +7,7 @@ A private, single-owner server of tools for agents. One process listens on two p
 Needs Node 24 or newer.
 
 ```sh
-npm ci
+npm ci            # .npmrc turns off install scripts; better-sqlite3 ships prebuilt binaries
 cp .env.example .env   # then edit it
 npm run build
 npm start

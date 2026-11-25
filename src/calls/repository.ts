@@ -1,5 +1,5 @@
 import { desc } from 'drizzle-orm'
-import type { NodeSQLiteDatabase } from 'drizzle-orm/node-sqlite'
+import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { keyId } from '../keys/repository.js'
 
@@ -34,7 +34,7 @@ const shown = {
 export class CallsRepository {
   readonly #database
 
-  constructor(database: NodeSQLiteDatabase) {
+  constructor(database: BetterSQLite3Database) {
     this.#database = database
   }
 

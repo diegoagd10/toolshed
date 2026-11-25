@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto'
-import type { NodeSQLiteDatabase } from 'drizzle-orm/node-sqlite'
+import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { blob, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
 export const secrets = sqliteTable('secrets', {
@@ -14,7 +14,7 @@ const name = 'links'
 export class LinksRepository {
   readonly #database
 
-  constructor(database: NodeSQLiteDatabase) {
+  constructor(database: BetterSQLite3Database) {
     this.#database = database
   }
 

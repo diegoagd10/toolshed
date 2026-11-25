@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import type { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import { and, eq, gt } from 'drizzle-orm'
-import type { NodeSQLiteDatabase } from 'drizzle-orm/node-sqlite'
+import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { StoreError } from '../store/error.js'
 
@@ -31,7 +31,7 @@ export class FilesRepository {
   readonly #dir
   readonly #partialDir
 
-  constructor(database: NodeSQLiteDatabase, dataDir: string) {
+  constructor(database: BetterSQLite3Database, dataDir: string) {
     this.#database = database
     this.#dir = join(dataDir, 'files')
     this.#partialDir = join(dataDir, 'partial')

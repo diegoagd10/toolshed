@@ -3,6 +3,8 @@ import { spawn, spawnSync } from 'node:child_process'
 import { once } from 'node:events'
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
+import { text } from 'node:stream/consumers'
+import { pathToFileURL } from 'node:url'
 import { DatabaseSync } from 'node:sqlite'
 import { createInterface } from 'node:readline'
 import { setTimeout as sleep } from 'node:timers/promises'
@@ -102,13 +104,31 @@ async function killed() {
   console.log(`ok 20 kill -9: integrity_check ok, ${confirmed.length} confirmed keys work, ${revoked.length} revoked keys do not`)
 }
 
+// Each process loads its modules, then waits for a shared moment, so that they open the database
+// together.
 async function together() {
-  for (let round = 0; round < 20; round++) {
-    const stores = Array.from({ length: 6 }, () => open(join(root, `together-${round}`)))
-    await Promise.all(stores.map((store) => store.ask({ do: 'key.create', name: 'x' })))
-    await Promise.all(stores.map((store) => store.close()))
+  const rounds = 30
+  for (let round = 0; round < rounds; round++) {
+    const dir = join(root, `together-${round}`)
+    const at = Date.now() + 1500
+    const preload = ['better-sqlite3', 'drizzle-orm/better-sqlite3', 'drizzle-orm/better-sqlite3/migrator', 'zod']
+    const script = preload.map((name) => `await import('${name}');`)
+      .join('') +
+      `while (Date.now() < ${at});` +
+      `await import(${JSON.stringify(pathToFileURL(program).href)})`
+    const children = Array.from({ length: 8 }, () => spawn(
+      process.execPath,
+      ['--input-type=module', '-e', script, dir],
+      { stdio: ['pipe', 'pipe', 'pipe'] },
+    ))
+    const outputs = await Promise.all(children.map(async (child) => {
+      child.stdin.end('{"do":"key.create","name":"x"}\n')
+      const [output, errors] = await Promise.all([text(child.stdout), text(child.stderr)])
+      return output + errors
+    }))
+    for (const output of outputs) assert.match(output, /"result"/, output)
   }
-  console.log('ok 20 times, 6 processes create the same database at once')
+  console.log(`ok ${rounds} times, 8 processes create the same database at once`)
 }
 
 async function perf() {
