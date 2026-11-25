@@ -42,7 +42,7 @@ export default defineConfig({
     },
   },
   pack: {
-    entry: ['src/main.ts'],
+    entry: { main: 'src/main.ts', tools: 'src/tools/main.ts' },
     format: 'esm',
     platform: 'node',
     target: 'node24',
