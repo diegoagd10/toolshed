@@ -10,5 +10,5 @@
     "noEmit": true,
     "emitDecoratorMetadata": true
   },
-  "include": ["src", "vite.config.ts"]
+  "include": ["src", "lint", "vite.config.ts"]
 }

@@ -1,8 +1,45 @@
-import { defineConfig } from 'vite-plus';
+import { defineConfig } from 'vite-plus'
 
 export default defineConfig({
-  fmt: { singleQuote: true, printWidth: 100, ignorePatterns: ['**/*.md', 'package-lock.json'] },
-  lint: { options: { typeAware: true, typeCheck: true, denyWarnings: true } },
+  fmt: { ignorePatterns: ['**/*.ts', '**/*.md', 'package-lock.json'] },
+  lint: {
+    jsPlugins: ['./lint/plugin.ts', '@stylistic/eslint-plugin'],
+    options: {
+      typeAware: true,
+      typeCheck: true,
+      denyWarnings: true,
+      reportUnusedDisableDirectives: 'error',
+    },
+    rules: {
+      'toolshed/controller-file': 'error',
+      'toolshed/module-file': 'error',
+      'toolshed/no-record': 'error',
+      'toolshed/integration-tests': 'error',
+      'no-unexpected-multiline': 'error',
+      '@stylistic/newline-per-chained-call': ['error', { ignoreChainWithDepth: 1 }],
+      '@stylistic/semi': ['error', 'never'],
+      '@stylistic/member-delimiter-style': ['error', {
+        multiline: { delimiter: 'none' },
+        singleline: { delimiter: 'comma' },
+      }],
+      '@stylistic/indent': ['error', 2, { SwitchCase: 1 }],
+      '@stylistic/quotes': ['error', 'single', { avoidEscape: true }],
+      '@stylistic/comma-dangle': ['error', 'always-multiline'],
+      '@stylistic/list-style': 'error',
+      '@stylistic/arrow-parens': ['error', 'always'],
+      '@stylistic/keyword-spacing': 'error',
+      '@stylistic/space-infix-ops': 'error',
+      '@stylistic/space-before-blocks': 'error',
+      '@stylistic/comma-spacing': 'error',
+      '@stylistic/key-spacing': 'error',
+      '@stylistic/type-annotation-spacing': 'error',
+      '@stylistic/no-multi-spaces': 'error',
+      '@stylistic/no-trailing-spaces': 'error',
+      '@stylistic/no-multiple-empty-lines': ['error', { max: 1, maxEOF: 0 }],
+      '@stylistic/eol-last': 'error',
+      '@stylistic/max-len': ['error', { code: 100, ignoreStrings: true, ignoreTemplateLiterals: true }],
+    },
+  },
   pack: {
     entry: ['src/main.ts'],
     format: 'esm',
@@ -11,5 +48,8 @@ export default defineConfig({
     dts: false,
     fixedExtension: false,
   },
-  test: { include: ['src/**/*.test.ts'], fsModuleCache: false },
-});
+  test: {
+    include: ['{src,lint}/**/*.{integration,unit}.test.ts'],
+    fsModuleCache: false,
+  },
+})

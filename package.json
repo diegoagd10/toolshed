@@ -19,6 +19,7 @@
     "zod": "4.6.7"
   },
   "devDependencies": {
+    "@stylistic/eslint-plugin": "6.0.1",
     "@types/node": "24.19.4",
     "vite-plus": "1.8.0"
   },

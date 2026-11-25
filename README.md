@@ -24,4 +24,16 @@ npm run check     # format, lint, types, build and tests; needs ports 4400 and 4
 scripts/rss.sh    # idle memory of the build; Linux only
 ```
 
-The toolchain is [Vite+](https://viteplus.dev), pinned in `package.json`. `npx vp check --fix` formats and fixes lint. `npm test` runs the built `dist/main.js`, so build first.
+The toolchain is [Vite+](https://viteplus.dev), pinned in `package.json`. `npx vp check --fix` fixes style; run it twice if it reports errors, since one fix can enable another. `npm test` runs the built `dist/main.js`, so build first.
+
+## Conventions
+
+`npm run check` enforces these. The first two fix themselves.
+
+- A chain of two or more calls puts each call after the first on its own line.
+- No semicolons.
+- No `Record` or index signatures. Declare a class or model type.
+- `@Controller` classes live in `src/<feature>/controller.ts` and `@Module` classes in `src/<feature>/modules.ts`.
+- Tests are `*.integration.test.ts` and go through `app.js` or the built server. A `*.unit.test.ts` is only for a path that an integration test cannot reach, and must start with `// unit-test-reason: <which path and why>`.
+
+The custom rules are in `lint/plugin.ts`. `@stylistic` formats TypeScript because the Vite+ formatter joins short chains into one line.
