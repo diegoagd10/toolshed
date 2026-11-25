@@ -83,9 +83,9 @@ test('altered, empty and hashed secrets do not authenticate', async () => {
   const hash = (await database(dir)).prepare('SELECT hash FROM keys')
     .get()?.hash
   const last = secret.endsWith('A') ? 'B' : 'A'
-  for (const wrong of ['', 'ts_', secret.slice(0, -1), `${secret} `, secret.slice(0, -1) + last, secret.toUpperCase(), String(hash)]) {
-    assert.equal(await authenticate(dir, wrong), null, wrong)
-  }
+  const wrong = ['', 'ts_', secret.slice(0, -1), `${secret} `, secret.slice(0, -1) + last, secret.toUpperCase(), String(hash)]
+  const results = await answers(dir, ...wrong.map((attempt): Command => ({ do: 'key.authenticate', secret: attempt })))
+  assert.deepEqual(results, wrong.map(() => ({ result: null })))
 })
 
 test('a revoked key does not authenticate and others still do', async () => {
@@ -110,19 +110,20 @@ test('revoking twice, or an unknown id, leaves the same state', async () => {
 test('using a key sets lastUsedAt, and again only after a minute', async () => {
   const dir = await dataDir()
   const { secret } = await createKey(dir)
-  const lastUsed = async () => (await ask<Key[]>(dir, { do: 'key.list' }))[0]?.lastUsedAt
-  await authenticate(dir, secret)
-  const first = await lastUsed()
+  const use = (attempt: string) => answers(
+    dir,
+    { do: 'key.authenticate', secret: attempt },
+    { do: 'key.list' },
+  )
+    .then(([, list]) => (list?.result as Key[])[0]?.lastUsedAt)
+  const first = await use(secret)
   assert.ok(first && Math.abs(Date.now() - Date.parse(first)) < 10_000)
-  await authenticate(dir, secret)
-  assert.equal(await lastUsed(), first)
+  assert.equal(await use(secret), first)
   const old = '2020-01-01T00:00:00.000Z'
   const opened = await database(dir)
   opened.exec(`UPDATE keys SET last_used_at = '${old}'`)
-  await authenticate(dir, `${secret}x`)
-  assert.equal(await lastUsed(), old)
-  await authenticate(dir, secret)
-  assert.notEqual(await lastUsed(), old)
+  assert.equal(await use(`${secret}x`), old)
+  assert.notEqual(await use(secret), old)
 })
 
 test('keys are listed in creation order without hashes or secrets', async () => {
