@@ -76,7 +76,7 @@ T1 y T3 son independientes y salen de `main`. T4 y T6 tocan `src/main.ts`: entra
 - [ ] **Unit:** cada variable requerida que falta produce un error que la nombra. La configuración completa arranca.
 - [ ] **Live:** `curl localhost:4400/health` y `curl localhost:4401/health` dan 200. Sin `OWNER_PASSWORD` el proceso termina con código distinto de 0.
 - [ ] **Live:** un commit con un error de tipos deja el CI en rojo. Al revertirlo queda en verde.
-- [ ] **Perf:** RSS en reposo a los 10 s, con `/proc/<pid>/status`. Guarda la base. Falla arriba de 100 MB.
+- [ ] **Perf:** memoria anónima en reposo a los 10 s, 5 corridas, con `RssAnon` de `/proc/<pid>/status`. Guarda la base. Falla si la mediana pasa de 100 MB.
 
 ## T1. Herramientas puras
 
