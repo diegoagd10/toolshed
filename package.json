@@ -36,6 +36,7 @@
     "drizzle-kit": "0.31.11",
     "jsqr": "1.4.0",
     "monocart-coverage-reports": "3.2.1",
+    "playwright-core": "1.65.0",
     "vite-plus": "1.8.0"
   },
   "engines": {
