@@ -24,7 +24,10 @@ npm run check     # format, lint, types, build, tests and coverage; needs ports 
 scripts/memory.sh # idle anonymous memory of the build, up to 100 MB; Linux only
 node scripts/tools.ts  # the built tools against qpdf, poppler and zbar; pass your own PDFs as arguments
 node scripts/store.ts  # the built store: secrets on disk, kill -9, simultaneous openings and speed
+node scripts/runner.ts # the built runner: PDF bombs, the queue, kill -9 to the parent and speed
 ```
+
+Each tool job runs in its own process, started through `setpriv --pdeathsig KILL` from util-linux, so the kernel kills it if the server dies. The server kills a job at 256 MB of RSS or after 30 s, runs 2 at a time and queues 10 more. Without `setpriv` on the `PATH` every job fails with `crashed`.
 
 The toolchain is [Vite+](https://viteplus.dev), pinned in `package.json`. `npx vp check --fix` fixes style; run it twice if it reports errors, since one fix can enable another. `npm test` runs the built `dist/main.js`, so build first.
 
