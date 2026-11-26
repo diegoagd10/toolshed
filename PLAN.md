@@ -164,12 +164,12 @@ T1 y T3 son independientes y salen de `main`. T4 y T6 tocan `src/main.ts`: entra
 **Cambio:** `/pair` y `/pair/token` en 4400. Aprobación en 4401, donde escribes el código. El servidor espera hasta 25 s por petición.
 **Resultado:** pegas `set up toolshed: <PUBLIC_URL>/llms.txt` y el agente queda conectado.
 
-- [ ] **Unit:** pendiente, aprobado, vencido, usado y código incorrecto. Dos reclamos a la vez entregan un solo key.
-- [ ] **Unit:** el dashboard nunca lista los códigos pendientes.
-- [ ] **Live:** Claude Code, con solo `curl` permitido, se conecta y crea un QR en 5 de 5 intentos, con una aprobación cada uno y menos de 60 s. El prototipo dio 3 de 3 en 18 a 20 s.
+- [x] **Unit:** pendiente, aprobado, vencido, usado y código incorrecto. Dos reclamos a la vez entregan un solo key.
+- [x] **Unit:** el dashboard nunca lista los códigos pendientes.
+- [x] **Live:** Claude Code, con solo `curl` permitido, se conecta y crea un QR en 5 de 5 intentos, con una aprobación cada uno y menos de 60 s. El prototipo dio 3 de 3 en 18 a 20 s.
 - [ ] **Live:** repite una vez con Codex y una con Cursor. Anota cada paso que el agente hizo mal.
-- [ ] **Live:** 6 códigos incorrectos en un minuto bloquean el séptimo intento, aunque sea correcto.
-- [ ] **Perf:** 20 peticiones esperando a la vez. `/health` p99 falla arriba de 50 ms.
+- [x] **Live:** 6 códigos incorrectos en un minuto bloquean el séptimo intento, aunque sea correcto.
+- [x] **Perf:** 20 peticiones esperando a la vez. `/health` p99 falla arriba de 50 ms.
 
 ## T8. Límites y limpieza
 

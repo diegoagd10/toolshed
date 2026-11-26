@@ -262,9 +262,51 @@ async function journeyKeys() {
   }
 }
 
+// journey pair [--width N]: an agent starts pairing over HTTP, the owner types its code on Start,
+// and the agent's waiting request returns a key that works.
+async function journeyPair() {
+  const state = readState()
+  const width = Number(args[args.indexOf('--width') + 1]) || 1200
+  const post = (path: string, body: unknown) => fetch(base(state, `agent:${path}`), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  const browser = await chromium.launch()
+  try {
+    const page = await browser.newPage({ viewport: { width, height: 800 } })
+    await signIn(page, state)
+    const started = (await (await post('/pair', { agent: 'journey agent' })).json()) as { pair_id: string, code: string }
+    check(/^[A-Z2-9]{4}-[A-Z2-9]{4}$/.test(started.code), `POST /pair gives a code (${started.code})`)
+    check(!(await page.content()).includes(started.code), 'Start does not show the pending code')
+    await page.getByLabel('Code')
+      .fill('WRON-GCOD')
+    await page.getByRole('button', { name: 'Approve' })
+      .click()
+    check(await page.getByRole('alert')
+      .count() === 1, 'a wrong code says no agent is waiting')
+    await capture(page, 'journey-pair-1-wrong-code')
+    const waiting = post('/pair/token', { pair_id: started.pair_id })
+    await page.getByLabel('Code')
+      .fill(started.code)
+    await page.getByRole('button', { name: 'Approve' })
+      .click()
+    await page.waitForURL(base(state, 'admin:/'))
+    const answer = await waiting
+    const { key } = (await answer.json()) as { key: string }
+    check(answer.status === 200, 'the waiting /pair/token returns 200 with a key')
+    const me = await fetch(base(state, 'agent:/v1/me'), { headers: { Authorization: `Bearer ${key}` } })
+    check(me.status === 200, 'the key works on /v1/me')
+    await capture(page, 'journey-pair-2-approved')
+  } finally {
+    await browser.close()
+  }
+}
+
 function journey() {
   const [name] = args
-  if (name !== 'keys') fail('usage: journey keys [--width N]')
+  if (name === 'pair') return journeyPair()
+  if (name !== 'keys') fail('usage: journey keys|pair [--width N]')
   return journeyKeys()
 }
 
@@ -283,7 +325,7 @@ function stop() {
 const commands = { launch, doctor, key, call, shot, journey, stop }
 const chosen = commands[command as keyof typeof commands] as (() => unknown) | undefined
 if (!chosen) {
-  console.log('usage: VERIFY_RUN=<id> .claude/skills/verify-toolshed/verify.ts launch|doctor|key [name]|call <tool> <json>|shot <url> <name> [--width N] [--owner]|journey keys [--width N]|stop')
+  console.log('usage: VERIFY_RUN=<id> .claude/skills/verify-toolshed/verify.ts launch|doctor|key [name]|call <tool> <json>|shot <url> <name> [--width N] [--owner]|journey keys|pair [--width N]|stop')
   process.exit(command === 'help' ? 0 : 1)
 }
 await chosen()
