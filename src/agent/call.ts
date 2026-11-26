@@ -2,7 +2,6 @@ import { randomUUID } from 'node:crypto'
 import { createReadStream } from 'node:fs'
 import { rm } from 'node:fs/promises'
 import { join } from 'node:path'
-import type { Key } from '../keys/repository.js'
 import type { RunnerErrorCode } from '../runner/runner.js'
 import { TOOLS } from '../tools/registry.js'
 import type { ToolErrorCode } from '../tools/tool.js'
@@ -47,17 +46,24 @@ async function run(context: AgentContext, id: string, body: unknown) {
     throw new ApiError(statusOf(code), code, message, headers)
   }
   try {
-    const saved = []
-    for (const file of result.files) {
-      saved.push(await context.store.files.save(file.name, file.mime, createReadStream(file.path)))
+    const files = []
+    for (const { name, mime, path, pages } of result.files) {
+      const saved = await context.store.files.save(name, mime, createReadStream(path))
+      files.push(describe(context, saved, pages))
     }
-    return { files: saved.map((file) => describe(context, file)) }
+    return { files }
   } finally {
     await rm(outputDir, { recursive: true, force: true })
   }
 }
 
-export async function callTool(context: AgentContext, key: Key, id: string, body: unknown) {
+export async function callTool(
+  context: AgentContext,
+  keyId: string,
+  id: string,
+  body: unknown,
+  via: 'rest' | 'mcp',
+) {
   const started = performance.now()
   let error: string | null = null
   try {
@@ -69,9 +75,9 @@ export async function callTool(context: AgentContext, key: Key, id: string, body
     context.store.calls.record({
       at: new Date()
         .toISOString(),
-      keyId: key.id,
+      keyId,
       tool: id,
-      via: 'rest',
+      via,
       ms: Math.round(performance.now() - started),
       error,
     })

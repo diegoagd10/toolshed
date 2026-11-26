@@ -17,12 +17,13 @@ export class ToolError extends Error {
   }
 }
 
-export type OutputFile = { name: string, mime: string, data: Uint8Array }
+// `pages` is set for a PDF, so an agent can choose ranges without opening the file.
+export type OutputFile = { name: string, mime: string, data: Uint8Array, pages?: number }
 export type ToolContext = { read: (fileId: string) => Promise<Uint8Array> }
 
 export const fileId = z.string()
   .regex(/^file_[A-Za-z0-9_-]+$/)
-  .describe('Id of an uploaded file or of an earlier result')
+  .describe('An uploaded file or an earlier result')
 
 export type ToolDefinition<Id extends string, Input extends z.ZodObject> = {
   id: Id

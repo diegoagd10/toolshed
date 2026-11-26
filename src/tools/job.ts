@@ -9,7 +9,7 @@ export const jobSchema = z.strictObject({
 })
 
 export type Job = z.output<typeof jobSchema>
-export type JobFile = { name: string, mime: string, bytes: number, path: string }
+export type JobFile = { name: string, mime: string, bytes: number, path: string, pages?: number }
 export type JobResult =
   | { files: JobFile[] }
   | { error: { code: ToolErrorCode, message: string } }

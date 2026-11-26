@@ -15,7 +15,7 @@ const name = z.string()
   .max(200)
   .regex(/^[^/\\\p{Cc}]+$/u, 'must not contain slashes or control characters')
 
-const uploadRequest = z.strictObject({ name })
+export const uploadRequest = z.strictObject({ name })
 const signedQuery = z.object({ expires: z.coerce.number(), signature: z.string() })
 const uploadQuery = signedQuery.extend({ name })
 
@@ -38,12 +38,13 @@ function verified<Query extends typeof signedQuery>(
   throw new ApiError(403, 'bad_signature', 'the link is invalid or has expired; ask for a new one')
 }
 
-export function describe(context: AgentContext, file: StoredFile) {
+export function describe(context: AgentContext, file: StoredFile, pages?: number) {
   return {
     file_id: file.id,
     name: file.name,
     mime: file.mime,
     bytes: file.bytes,
+    ...(pages === undefined ? {} : { pages }),
     expires_at: new Date(file.expiresAt)
       .toISOString(),
     download_url: signedUrl(context, 'GET', file.id).url,

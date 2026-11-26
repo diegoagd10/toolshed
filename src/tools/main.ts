@@ -14,10 +14,10 @@ async function runJob(job: Job): Promise<JobResult> {
 
   try {
     const outputs = await runTool(job.tool, job.input, { read })
-    const files = await Promise.all(outputs.map(async ({ name, mime, data }, index) => {
+    const files = await Promise.all(outputs.map(async ({ data, ...file }, index) => {
       const path = join(job.outputDir, String(index))
       await writeFile(path, data)
-      return { name, mime, bytes: data.byteLength, path }
+      return { ...file, bytes: data.byteLength, path }
     }))
     return { files }
   } catch (error) {
