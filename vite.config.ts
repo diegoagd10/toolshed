@@ -43,7 +43,7 @@ export default defineConfig({
     },
   },
   pack: {
-    entry: { main: 'src/main.ts', tools: 'src/tools/main.ts', store: 'src/store/main.ts' },
+    entry: { main: 'src/main.ts', tools: 'src/tools/main.ts', store: 'src/store/main.ts', runner: 'src/runner/main.ts' },
     format: 'esm',
     platform: 'node',
     target: 'node24',

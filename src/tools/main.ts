@@ -1,22 +1,9 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { json } from 'node:stream/consumers'
-import { z } from 'zod'
 import { runTool } from './registry.js'
-import { ToolError, type ToolErrorCode } from './tool.js'
-
-const jobSchema = z.strictObject({
-  tool: z.string(),
-  input: z.unknown(),
-  files: z.array(z.strictObject({ id: z.string(), path: z.string() })),
-  outputDir: z.string(),
-})
-
-export type Job = z.output<typeof jobSchema>
-export type JobFile = { name: string, mime: string, bytes: number, path: string }
-export type JobResult =
-  | { files: JobFile[] }
-  | { error: { code: ToolErrorCode, message: string } }
+import { type Job, jobSchema, type JobResult } from './job.js'
+import { ToolError } from './tool.js'
 
 async function runJob(job: Job): Promise<JobResult> {
   async function read(id: string) {

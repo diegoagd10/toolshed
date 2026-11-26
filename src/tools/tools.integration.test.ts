@@ -8,7 +8,7 @@ import jsqr from 'jsqr'
 import { PDFDocument, PDFName, PDFRawStream, PDFString } from 'pdf-lib'
 import { PNG } from 'pngjs'
 import { onTestFinished, test } from 'vite-plus/test'
-import type { Job, JobFile, JobResult } from './main.js'
+import type { Job, JobFile, JobResult } from './job.js'
 
 type Input = { id: string, data: Uint8Array | string }
 

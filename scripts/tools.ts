@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { json } from 'node:stream/consumers'
 import { PDFDocument, StandardFonts } from 'pdf-lib'
-import type { JobResult } from '../src/tools/main.js'
+import type { JobResult } from '../src/tools/job.js'
 
 const dir = mkdtempSync(join(tmpdir(), 'toolshed-live-'))
 process.on('exit', () => rmSync(dir, { recursive: true }))

@@ -96,12 +96,12 @@ T1 y T3 son independientes y salen de `main`. T4 y T6 tocan `src/main.ts`: entra
 **Cambio:** cada trabajo corre en un proceso hijo que recibe rutas de archivo. El padre lo mata a los 256 MB de RSS o a los 30 s. Corren 2 a la vez y esperan hasta 10 más.
 **Resultado:** un PDF malo da un error y el servidor sigue.
 
-- [ ] **Unit:** error propio para `too_much_memory`, `timeout`, `busy` y `crashed`. Un trabajo bueno devuelve su resultado.
-- [ ] **Unit:** si el hijo muere a la mitad, no queda archivo de salida. La salida se escribe en una ruta temporal y luego se renombra.
-- [ ] **Live:** manda un PDF con un `ObjStm` comprimido que se expande a 300 MB, y otro a 600 MB. Responde `too_much_memory` en menos de 2 s, y `/health`, consultado cada 50 ms, nunca tarda más de 100 ms.
-- [ ] **Live:** con 13 trabajos lentos a la vez, 12 terminan y 1 recibe `busy`. Al final `pgrep -P <pid>` no muestra hijos.
-- [ ] **Live:** `kill -9` al padre con un trabajo en curso. No quedan hijos 5 s después.
-- [ ] **Perf:** unir dos PDFs de 10 MB con el proceso hijo contra la base de T1. Falla si agrega más de 200 ms. El prototipo tardó 124 ms en total, con la generación de los PDFs incluida.
+- [x] **Unit:** error propio para `too_much_memory`, `timeout`, `busy` y `crashed`. Un trabajo bueno devuelve su resultado.
+- [x] **Unit:** si el hijo muere a la mitad, no queda archivo de salida. La salida se escribe en una ruta temporal y luego se renombra.
+- [x] **Live:** manda un PDF con un `ObjStm` comprimido que se expande a 300 MB, y otro a 600 MB. Responde `too_much_memory` en menos de 2 s, y `/health`, consultado cada 50 ms, nunca tarda más de 100 ms.
+- [x] **Live:** con 13 trabajos lentos a la vez, 12 terminan y 1 recibe `busy`. Al final `pgrep -P <pid>` no muestra hijos.
+- [x] **Live:** `kill -9` al padre con un trabajo en curso. No quedan hijos 5 s después.
+- [x] **Perf:** unir dos PDFs de 10 MB con el proceso hijo contra la base de T1. Falla si agrega más de 200 ms. El prototipo tardó 124 ms en total, con la generación de los PDFs incluida.
 
 ## T3. Keys, llamadas y archivos
 
