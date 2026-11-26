@@ -2,15 +2,21 @@ import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
 import { once } from 'node:events'
 import { createServer } from 'node:net'
+import { mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { setTimeout as sleep } from 'node:timers/promises'
-import { onTestFinished, test } from 'vite-plus/test'
+import { afterAll, onTestFinished, test } from 'vite-plus/test'
 import type { Environment } from './config.js'
+
+const data = mkdtempSync(join(tmpdir(), 'toolshed-main-'))
+afterAll(() => rmSync(data, { recursive: true }))
 
 const env: Environment = {
   OWNER_PASSWORD: 'sekret-owner',
   PUBLIC_URL: 'https://tools.example.com',
   ADMIN_URL: 'http://admin.lan',
+  DATA: data,
 }
 
 function run(env: Environment) {
@@ -57,7 +63,7 @@ function rejects(title: string, overrides: Environment, names: string[]) {
     const { code, output } = await run({ ...env, ...overrides }).exited
     assert.equal(code, 1)
     assert.match(output, /^[^\n]+\n$/)
-    assert.deepEqual([...required, 'DATA'].filter((name) => output.includes(name)), names)
+    assert.deepEqual([...required, 'DATA', 'AGENT_PORT', 'ADMIN_PORT'].filter((name) => output.includes(name)), names)
     assert.doesNotMatch(output, /sekret|tools\.example/)
   })
 }
@@ -67,6 +73,8 @@ for (const name of required) {
   rejects(`an empty ${name} is the only variable named`, { [name]: '' }, [name])
 }
 rejects('an empty DATA is named', { DATA: '' }, ['DATA'])
+rejects('a port that is not a number is named', { AGENT_PORT: 'http' }, ['AGENT_PORT'])
+rejects('a port above 65535 is named', { ADMIN_PORT: '65536' }, ['ADMIN_PORT'])
 rejects(
   'all bad variables are named in one line',
   { OWNER_PASSWORD: '', PUBLIC_URL: 'sekret', ADMIN_URL: 'ftp://sekret', DATA: '' },
@@ -98,7 +106,11 @@ for (const signal of ['SIGTERM', 'SIGINT'] as const) {
     await healthy(4400, exited)
     await healthy(4401, exited)
     child.kill(signal)
-    assert.deepEqual(await exited, { code: 0, signal: null, output: '' })
+    assert.deepEqual(await exited, {
+      code: 0,
+      signal: null,
+      output: 'toolshed: agents on port 4400, admin on port 4401\n',
+    })
   })
 }
 

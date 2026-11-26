@@ -123,12 +123,12 @@ T1 y T3 son independientes y salen de `main`. T4 y T6 tocan `src/main.ts`: entra
 **Cambio:** en 4400, `/v1/tools`, `/v1/call/:id`, `/v1/uploads`, `/v1/me`, `/f/:id` y `/llms.txt`. Las subidas van directo a disco.
 **Resultado:** un agente con key usa las herramientas con `curl`.
 
-- [ ] **Unit:** sin key y con key revocado da 401. Entrada inválida da 422 y nombra el campo. Un error interno no muestra su mensaje.
-- [ ] **Unit:** `llms.txt` lista cada herramienta de `TOOLS` y ninguna más.
-- [ ] **Live:** con `curl`, sube 2 PDFs, únelos, separa el resultado y descarga. `pdftotext` confirma las páginas.
-- [ ] **Live:** una subida de 51 MB da 413. Una cortada a la mitad no deja archivo.
-- [ ] **Live:** las descargas llevan `Content-Disposition: attachment` y `X-Content-Type-Options: nosniff`, también para SVG.
-- [ ] **Perf:** RSS del padre durante una subida de 50 MB. Falla si crece más de 30 MB.
+- [x] **Unit:** sin key y con key revocado da 401. Entrada inválida da 422 y nombra el campo. Un error interno no muestra su mensaje.
+- [x] **Unit:** `llms.txt` lista cada herramienta de `TOOLS` y ninguna más.
+- [x] **Live:** con `curl`, sube 2 PDFs, únelos, separa el resultado y descarga. `pdftotext` confirma las páginas.
+- [x] **Live:** una subida de 51 MB da 413. Una cortada a la mitad no deja archivo.
+- [x] **Live:** las descargas llevan `Content-Disposition: attachment` y `X-Content-Type-Options: nosniff`, también para SVG.
+- [x] **Perf:** RSS del padre durante una subida de 50 MB. Falla si crece más de 30 MB.
 
 ## T5. MCP
 

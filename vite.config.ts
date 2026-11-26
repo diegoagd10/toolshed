@@ -50,6 +50,8 @@ export default defineConfig({
     dts: false,
     fixedExtension: false,
     sourcemap: true,
+    // Loaded from node_modules, drizzle-orm's hundreds of modules leave about 90 MB of heap behind.
+    deps: { alwaysBundle: [/^drizzle-orm(\/|$)/] },
   },
   test: {
     include: ['src/**/*.{integration,unit}.test.ts'],

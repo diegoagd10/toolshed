@@ -14,6 +14,11 @@ const origin = required.transform((value, ctx) => {
   return z.NEVER
 })
 
+const port = z.coerce.number('must be a port from 0 to 65535')
+  .int('must be a port from 0 to 65535')
+  .min(0, 'must be a port from 0 to 65535')
+  .max(65535, 'must be a port from 0 to 65535')
+
 const schema = z.object({
   OWNER_PASSWORD: required,
   PUBLIC_URL: origin,
@@ -21,6 +26,8 @@ const schema = z.object({
   DATA: z.string()
     .min(1, 'must not be empty')
     .default('./data'),
+  AGENT_PORT: port.default(4400),
+  ADMIN_PORT: port.default(4401),
 })
 
 export type Config = z.output<typeof schema>
@@ -30,6 +37,8 @@ export type Environment = {
   PUBLIC_URL?: string
   ADMIN_URL?: string
   DATA?: string
+  AGENT_PORT?: string
+  ADMIN_PORT?: string
 }
 
 export function parseConfig(env: Environment): Config {
