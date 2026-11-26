@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import type { DynamicModule, Type } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
 import type { NestExpressApplication } from '@nestjs/platform-express'
+import { AdminContext } from './admin/context.js'
 import { AdminModule } from './admin/modules.js'
 import { AgentContext } from './agent/context.js'
 import { AgentModule } from './agent/modules.js'
@@ -27,7 +28,8 @@ export async function start(config: Config): Promise<Running> {
     module: AgentPort,
     imports: [AgentModule.register(context), McpModule.register(context)],
   })
-  const admin = await createApp(AdminModule)
+  const admin = await createApp(AdminModule.register(new AdminContext(config, store)))
+  admin.useBodyParser('urlencoded', { limit: '16kb', extended: false })
   const close = async () => {
     await Promise.all([agent.close(), admin.close()])
     store.close()

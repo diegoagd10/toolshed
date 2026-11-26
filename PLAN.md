@@ -149,14 +149,14 @@ T1 y T3 son independientes y salen de `main`. T4 y T6 tocan `src/main.ts`: entra
 **Cambio:** en 4401, login y las páginas Start, Tools, Keys y Activity, con el tag `html`.
 **Resultado:** entras, creas un key, lo ves una vez y lo revocas.
 
-- [ ] **Unit:** `html` escapa `<script>`, comillas y atributos. Solo un valor marcado como HTML pasa sin escapar.
-- [ ] **Unit:** la sexta contraseña incorrecta en un minuto da 429. Pasado el minuto, la correcta entra.
-- [ ] **Live:** en Chromium: login, crear, copiar, recargar y revocar. El key no aparece tras recargar. Responde con `Cache-Control: no-store`.
-- [ ] **Live:** crea un key llamado `<img src=x onerror=alert(1)>`. Se ve como texto y no se ejecuta.
-- [ ] **Live:** un POST con otro `Origin`, o sin cookie, no cambia nada.
-- [ ] **Live:** en 4400, `/`, `/keys`, `/activity` y `/login` dan 404.
-- [ ] **Live:** capturas de las cuatro páginas a 390 px y 1200 px, sin scroll horizontal, en el PR.
-- [ ] **Perf:** `/keys` con 20 keys lista en Chromium local, 10 visitas. El prototipo dio 17 ms. Falla arriba de 100 ms.
+- [x] **Unit:** `html` escapa `<script>`, comillas y atributos. Solo un valor marcado como HTML pasa sin escapar.
+- [x] **Unit:** la sexta contraseña incorrecta en un minuto da 429. Pasado el minuto, la correcta entra.
+- [x] **Live:** en Chromium: login, crear, copiar, recargar y revocar. El key no aparece tras recargar. Responde con `Cache-Control: no-store`.
+- [x] **Live:** crea un key llamado `<img src=x onerror=alert(1)>`. Se ve como texto y no se ejecuta.
+- [x] **Live:** un POST con otro `Origin`, o sin cookie, no cambia nada.
+- [x] **Live:** en 4400, `/`, `/keys`, `/activity` y `/login` dan 404.
+- [x] **Live:** capturas de las cuatro páginas a 390 px y 1200 px, sin scroll horizontal, en el PR.
+- [x] **Perf:** `/keys` con 20 keys lista en Chromium local, 10 visitas. El prototipo dio 17 ms. Falla arriba de 100 ms.
 
 ## T7. Conexión con código
 

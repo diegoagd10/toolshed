@@ -4,3 +4,4 @@ data
 .env
 .private
 coverage
+verify-evidence

@@ -15,7 +15,7 @@ npm start
 
 `OWNER_PASSWORD`, `PUBLIC_URL` and `ADMIN_URL` are required. The URLs are origins, such as `https://tools.example.com`. `DATA` defaults to `./data`.
 
-Both ports answer `GET /health`. `AGENT_PORT` and `ADMIN_PORT` change the ports, which default to 4400 and 4401. An agent starts at `<PUBLIC_URL>/llms.txt`.
+Both ports answer `GET /health`. The dashboard is on the admin port: sign in with `OWNER_PASSWORD`, then make and revoke a key for each agent. Its forms only work from `ADMIN_URL`, so open it at exactly that origin. `AGENT_PORT` and `ADMIN_PORT` change the ports, which default to 4400 and 4401. An agent starts at `<PUBLIC_URL>/llms.txt`.
 
 ## Check
 
@@ -27,6 +27,13 @@ node scripts/store.ts  # the built store: secrets on disk, kill -9, simultaneous
 node scripts/runner.ts # the built runner: PDF bombs, the queue, kill -9 to the parent and speed
 node scripts/agent.ts  # the built server with curl: upload, merge, split, download, limits and memory
 node scripts/mcp.ts    # the built server with the official MCP client in 2025-11-25 and 2026-07-28, and tools/list size
+node scripts/admin.ts  # the dashboard in headless Chromium: login, keys, escaping, cross-origin forms, widths and speed
+```
+
+To see a change in the running app, with screenshots, follow `.claude/skills/verify-toolshed/SKILL.md`:
+
+```sh
+VERIFY_RUN=my-change .claude/skills/verify-toolshed/verify.ts launch   # then doctor, shot, journey, stop
 ```
 
 `npm start` runs Node with `--max-semi-space-size=1`. With the default young generation, the server collects the buffers of an upload late: a 50 MB upload grew it by about 42 MB, against 13 MB with the flag. Any other way of starting the server needs the same flag.
