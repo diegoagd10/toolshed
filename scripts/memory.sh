@@ -8,7 +8,7 @@ trap '[ -z "$pid" ] || kill "$pid" 2>/dev/null || true' EXIT
 
 values=()
 for run in 1 2 3 4 5; do
-  node dist/main.js &
+  node --max-semi-space-size=1 dist/main.js &  # the same flags as npm start
   pid=$!
   sleep 10
   kb=$(awk '/^RssAnon:/ { print $2 }' "/proc/$pid/status")
