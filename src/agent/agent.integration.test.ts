@@ -25,7 +25,7 @@ type FileAnswer = {
 }
 type ErrorAnswer = { error: { code: string, message: string } }
 type UploadAnswer = { upload_url: string, method: string, command: string }
-type Listed = { id: string, input: { type: string }, example: object }
+type Listed = { id: string, input: { type: string, required: string[] }, example: object }
 type Me = { id: string, name: string, prefix: string, created_at: string }
 type Headers = { 'Content-Length'?: string }
 
@@ -203,6 +203,8 @@ test('/v1/tools gives each tool with a JSON Schema and an example, without a key
   const tools = (await response.json()) as Listed[]
   assert.deepEqual(tools.map(({ id }) => id), toolIds)
   for (const tool of tools) assert.equal(tool.input.type, 'object')
+  // format and size have defaults, so a caller may leave them out, as the example does.
+  assert.deepEqual(tools[0]?.input.required, ['text'])
 })
 
 test('a missing, malformed, unknown or revoked key gives 401', async () => {
