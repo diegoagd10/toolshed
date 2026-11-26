@@ -30,3 +30,4 @@ The maintained list of what an owner or an agent can do with toolshed, and how t
 | [owner-activity.md](owner-activity.md) | Start, Tools and Activity pages | admin |
 | [agent-rest.md](agent-rest.md) | Upload, run a tool and download over REST | agent |
 | [agent-mcp.md](agent-mcp.md) | The same through MCP | agent |
+| [agent-pairing.md](agent-pairing.md) | Connect an agent with a code typed on Start | agent and admin |

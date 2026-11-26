@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { css, js } from './assets.js'
 import { AdminContext } from './context.js'
 import type { Html } from './html.js'
-import { activityPage, keysPage, loginPage, startPage, toolsPage } from './pages.js'
+import { activityPage, keysPage, loginPage, type Notice, startPage, toolsPage } from './pages.js'
 
 const cookie = 'toolshed_session'
 const cookiePattern = /(?:^|;\s*)toolshed_session=([\w-]+)/
@@ -18,6 +18,8 @@ const headers = {
 
 const loginForm = z.object({ password: z.string() })
   .catch({ password: '' })
+const pairForm = z.object({ code: z.string() })
+  .catch({ code: '' })
 const keyForm = z.object({
   name: z.string()
     .trim()
@@ -118,13 +120,40 @@ export class AdminController {
     redirect(response, '/login')
   }
 
-  @Get()
-  start(@Req() request: Request, @Res() response: Response) {
-    if (!this.#owner(request, response)) return
+  #start(response: Response, status: number, notice: Notice | false) {
     const { config, store } = this.#context
     const active = store.keys.list()
       .filter((key) => key.revokedAt === null).length
-    page(response, 200, startPage(config.PUBLIC_URL, active, store.calls.recent(1)[0]))
+    page(response, status, startPage(config.PUBLIC_URL, active, store.calls.recent(1)[0], notice))
+  }
+
+  @Get()
+  start(@Req() request: Request, @Res() response: Response) {
+    const token = this.#owner(request, response)
+    if (!token) return
+    this.#start(response, 200, this.#context.takeNotice(token) ?? false)
+  }
+
+  // The owner types the code the agent showed. Pending codes are never listed anywhere.
+  @Post('pair/approve')
+  approvePair(@Req() request: Request, @Res() response: Response) {
+    if (!this.#sameOrigin(request, response)) return
+    const token = this.#owner(request, response)
+    if (!token) return
+    const { pairs, pairLimiter } = this.#context
+    const wait = pairLimiter.wait()
+    if (wait > 0) {
+      response.set('Retry-After', String(wait))
+      return this.#start(response, 429, { ok: false, text: `Too many wrong codes. Try again in ${wait} s.` })
+    }
+    const agent = pairs.approve(pairForm.parse(request.body).code)
+    if (agent === undefined) {
+      pairLimiter.fail()
+      const text = 'No agent is waiting with that code. Check it and type it again.'
+      return this.#start(response, 422, { ok: false, text })
+    }
+    this.#context.notify(token, { ok: true, text: `Approved ${agent}. It gets its own key now.` })
+    redirect(response, '/')
   }
 
   @Get('tools')

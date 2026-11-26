@@ -4,7 +4,7 @@ Start tells the owner how to connect an agent and shows the last call. Tools lis
 
 ## Sub-features
 
-- `start-connect` shows the `llms.txt` instruction and the MCP URL with `Copy` buttons.
+- `start-connect` shows the `set up toolshed` line, the code form and the MCP URL.
 - `start-status` shows `No calls yet.` or `Last call: <tool>`.
 - `tools-list` shows every tool with its id and example.
 - `activity-list` shows time, tool, key name, REST or MCP, time taken and result.

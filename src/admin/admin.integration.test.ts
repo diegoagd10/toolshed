@@ -159,7 +159,7 @@ test('empty Keys, Activity and Start pages say so', async () => {
   const start = await page('/', session)
   assert.match(start, /0 keys are active\./)
   assert.match(start, /No calls yet\./)
-  assert.match(start, /Read https:\/\/tools\.example\.com\/llms\.txt and follow it/)
+  assert.ok(start.includes('<pre id="setup">set up toolshed: https://tools.example.com/llms.txt</pre>'))
   assert.match(start, /<pre id="mcp">https:\/\/tools\.example\.com\/mcp<\/pre>/)
 })
 

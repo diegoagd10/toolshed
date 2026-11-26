@@ -5,7 +5,7 @@ description: Launch a disposable toolshed server and prove its behavior the way 
 
 # Verify toolshed
 
-toolshed is one Node process with two ports: the agent port (REST under `/v1`, MCP at `/mcp`, `llms.txt`, signed file links under `/f`) and the admin port (the owner dashboard: `/login`, `/`, `/tools`, `/keys`, `/activity`). Everything here runs from the repo root and drives `dist/`, the build that production runs.
+toolshed is one Node process with two ports: the agent port (REST under `/v1`, MCP at `/mcp`, `llms.txt`, signed file links under `/f`) and the admin port (the owner dashboard: `/login`, `/`, `/tools`, `/keys`, `/activity`), and pairing: `/pair` on the agent port, approval on Start. Everything here runs from the repo root and drives `dist/`, the build that production runs.
 
 The helper is `.claude/skills/verify-toolshed/verify.ts`, an executable Node script. Each run is named by `VERIFY_RUN`. Two runs with different names never share ports, data or evidence.
 
@@ -41,6 +41,7 @@ Read-only. It checks that the process from `launch` still runs `dist/main.js`, t
 | `$V key [name]` | Creates an agent key through the built store and keeps the secret in the state file. |
 | `$V call <tool> '<json>'` | `POST /v1/call/<tool>` with that key, as an agent would. Prints the status and body. |
 | `$V shot <admin:/path\|agent:/path> <name> [--width N] [--owner]` | Opens the page in headless Chromium at N px wide (default 1200), signs in through the login form first with `--owner`, and saves a full-page PNG and an ARIA snapshot. Prints the HTTP status and whether the page scrolls sideways. |
+| `$V journey pair [--width N]` | An agent pairs over HTTP and the owner types its code on Start: a wrong code first, then the right one, with captures of both. |
 | `$V journey keys [--width N]` | The owner's key journey in the UI: sign in, create, copy, reload, revoke, with a check on the agent port after each step and a capture of each state. The secret is masked in the captures. |
 
 The feature map in `features/README.md` says how to drive each feature, including the checks in `scripts/` that cover the agent port.

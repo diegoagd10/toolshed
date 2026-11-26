@@ -19,9 +19,18 @@ export function llmsText(base: string) {
 
 > The private tool server of the person you work for, run by them. Files sent to it stay with them and are deleted after 24 hours. Files go in and come out by link, never as base64.
 
+## Connect
+
+Do this once, when you have no key.
+
+1. POST ${base}/pair with {"agent":"<your name, such as Claude Code>"}. It returns pair_id and code.
+2. Tell the owner, with the code exactly as it came: "Type the code <code> on the Start page of your toolshed dashboard." Do not wait for an answer.
+3. Run this single curl command, not a loop: \`curl -s -o <file> -w '%{http_code}' -X POST ${base}/pair/token -H 'Content-Type: application/json' -d '{"pair_id":"<pair_id>"}'\`, with <file> outside the project, such as in your scratchpad. The server holds it up to 25 seconds and answers as soon as the owner types the code. On 202, run the same command again. On 200, <file> holds your key in the field "key". The code works for 10 minutes and once.
+4. That file is where the key lives. Use it as \`Authorization: Bearer $(jq -r .key <file>)\`, never print it and never put it in the project. If you have a secret store, keep the key there as TOOLSHED_API_KEY instead.
+
 ## Use
 
-- The owner gives you a key. Keep it in your secret store as TOOLSHED_API_KEY, and send \`Authorization: Bearer $TOOLSHED_API_KEY\` on every /v1 request except /v1/tools. Never print it or commit it.
+- Send \`Authorization: Bearer $TOOLSHED_API_KEY\` on every /v1 request except /v1/tools.
 - Check the key: GET ${base}/v1/me
 - List the tools with their JSON Schema: GET ${base}/v1/tools
 - Run a tool: POST ${base}/v1/call/<id> with the input as a JSON body. Files come back with a name and a download_url that works for 15 minutes. Save each one with \`curl -o <name> "<download_url>"\`, choosing the name you need.

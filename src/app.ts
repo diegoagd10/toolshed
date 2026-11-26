@@ -10,6 +10,9 @@ import { AgentContext } from './agent/context.js'
 import { AgentModule } from './agent/modules.js'
 import type { Config } from './config.js'
 import { McpModule } from './mcp/modules.js'
+import { PairContext } from './pair/context.js'
+import { PairModule } from './pair/modules.js'
+import { Pairs } from './pair/pairs.js'
 import { Runner } from './runner/runner.js'
 import { openStore } from './store/repository.js'
 
@@ -23,12 +26,18 @@ export async function start(config: Config): Promise<Running> {
   const workDir = join(config.DATA, 'work')
   mkdirSync(workDir, { recursive: true, mode: 0o700 })
   const context = new AgentContext(config, store, new Runner(), workDir)
+  // One set of pairing requests: agents start them on 4400 and the owner approves them on 4401.
+  const pairs = new Pairs()
   // Port 4400 serves the REST API and MCP. Neither module is reachable from 4401.
   const agent = await createApp({
     module: AgentPort,
-    imports: [AgentModule.register(context), McpModule.register(context)],
+    imports: [
+      AgentModule.register(context),
+      McpModule.register(context),
+      PairModule.register(new PairContext(context, pairs)),
+    ],
   })
-  const admin = await createApp(AdminModule.register(new AdminContext(config, store)))
+  const admin = await createApp(AdminModule.register(new AdminContext(config, store, pairs)))
   admin.useBodyParser('urlencoded', { limit: '16kb', extended: false })
   const close = async () => {
     await Promise.all([agent.close(), admin.close()])

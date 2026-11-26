@@ -52,24 +52,34 @@ ${error !== false && html`<p class="error" role="alert">${error}</p>`}
 </main>`)
 }
 
-export function startPage(publicUrl: string, active: number, last: Call | undefined) {
+export type Notice = { ok: boolean, text: string }
+
+export function startPage(
+  publicUrl: string,
+  active: number,
+  last: Call | undefined,
+  notice: Notice | false,
+) {
   const status = last
     ? html`<p><span class="ok">●</span> Last call: <code>${last.tool}</code> ${when(last.at)}</p>`
     : html`<p class="muted">○ No calls yet.</p>`
+  const message = notice !== false && html`<p class="${notice.ok ? 'ok' : 'error'}" role="${notice.ok ? 'status' : 'alert'}">${notice.text}</p>`
   return layout('/', 'Start', html`<h1>Connect your agent</h1>
-<p class="lead">Give it a key and the address of its instructions.</p>
+<p class="lead">Send it one line. When it shows you a code, type the code here.</p>
 <div class="card">
-<h2>1. Create a key</h2>
-<p>${active === 1 ? '1 key is active.' : `${active} keys are active.`} <a href="/keys">Create one for each agent.</a></p>
+<h2>1. Send this to an agent with a shell</h2>
+<div class="copy"><pre id="setup">set up toolshed: ${publicUrl}/llms.txt</pre><button class="quiet" type="button" data-copy="setup">Copy</button></div>
 </div>
-<div class="card">
-<h2>2. Send this to an agent with a shell</h2>
-<div class="copy"><pre id="instructions">Read ${publicUrl}/llms.txt and follow it. Your key is in TOOLSHED_API_KEY.</pre><button class="quiet" type="button" data-copy="instructions">Copy</button></div>
-</div>
+<form method="post" action="/pair/approve" class="card">
+<h2>2. Type the code it shows you</h2>
+${message}
+<div class="field"><div><label for="code">Code</label><input id="code" name="code" required autocomplete="off" spellcheck="false" placeholder="ABCD-EFGH"></div><button>Approve</button></div>
+<p class="muted">The agent gets its own key. Codes work once, for 10 minutes.</p>
+</form>
 <div class="card">
 <h2>Or add it as an MCP server</h2>
 <div class="copy"><pre id="mcp">${publicUrl}/mcp</pre><button class="quiet" type="button" data-copy="mcp">Copy</button></div>
-<p class="muted">Streamable HTTP, with the header <code>Authorization: Bearer &lt;key&gt;</code>.</p>
+<p class="muted">Streamable HTTP, with the header <code>Authorization: Bearer &lt;key&gt;</code> and a key from <a href="/keys">Keys</a>. ${active === 1 ? '1 key is active.' : `${active} keys are active.`}</p>
 </div>
 <div class="card" aria-label="Status">${status}</div>`)
 }
