@@ -136,12 +136,12 @@ T1 y T3 son independientes y salen de `main`. T4 y T6 tocan `src/main.ts`: entra
 **Cambio:** `/mcp` en 4400 con `@modelcontextprotocol/server` v2, una herramienta MCP por cada `Tool`, y `file_upload`.
 **Resultado:** un cliente MCP se conecta con `Authorization: Bearer`.
 
-- [ ] **Unit:** la lista de herramientas sale de `TOOLS`. Un error de herramienta llega con `isError` y su código.
-- [ ] **Live:** el cliente oficial, en 2025-11-25 y en 2026-07-28, sube, une, separa y descarga.
-- [ ] **Live:** `tools/list` sin el header `MCP-Protocol-Version` da 200. Cubre el error reportado de Grok Bot.
-- [ ] **Live:** conecta Claude Code con `claude mcp add --transport http` en una configuración temporal. Pide "une estos dos PDFs" y revisa el resultado con `pdftotext`.
-- [ ] **Live:** el agente repite con los PDFs reales de T1, sin ayuda tuya: con un key de prueba los sube, une, separa y descarga por MCP. `pdfinfo` da las páginas esperadas y `qpdf --check` termina en 0. Al final revoca el key.
-- [ ] **Perf:** tamaño de `tools/list`. Falla arriba de 600 caracteres por herramienta.
+- [x] **Unit:** la lista de herramientas sale de `TOOLS`. Un error de herramienta llega con `isError` y su código.
+- [x] **Live:** el cliente oficial, en 2025-11-25 y en 2026-07-28, sube, une, separa y descarga.
+- [x] **Live:** `tools/list` sin el header `MCP-Protocol-Version` da 200. Cubre el error reportado de Grok Bot.
+- [x] **Live:** conecta Claude Code con `claude mcp add --transport http` en una configuración temporal. Pide "une estos dos PDFs" y revisa el resultado con `pdftotext`.
+- [x] **Live:** el agente repite con los PDFs reales de T1, sin ayuda tuya: con un key de prueba los sube, une, separa y descarga por MCP. `pdfinfo` da las páginas esperadas y `qpdf --check` termina en 0. Al final revoca el key.
+- [x] **Perf:** tamaño de `tools/list`. Falla arriba de 600 caracteres por herramienta.
 
 ## T6. Dashboard
 

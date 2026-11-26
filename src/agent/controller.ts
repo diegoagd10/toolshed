@@ -39,7 +39,7 @@ export class AgentController {
   @Post('v1/call/:id')
   @HttpCode(200)
   call(@Param('id') id: string, @Body() body: unknown, @Headers('authorization') header?: string) {
-    return callTool(this.#context, authenticate(this.#context, header), id, body)
+    return callTool(this.#context, authenticate(this.#context, header).id, id, body, 'rest')
   }
 
   @Post('v1/uploads')

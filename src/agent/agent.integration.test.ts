@@ -20,6 +20,7 @@ type FileAnswer = {
   name: string
   mime: string
   bytes: number
+  pages?: number
   expires_at: string
   download_url: string
 }
@@ -240,8 +241,9 @@ test('upload two PDFs, merge them, split the result and download the parts', asy
   assert.deepEqual([a.name, a.mime], ['a.pdf', 'application/octet-stream'])
   const [merged] = await call('pdf.merge', { files: [a.file_id, b.file_id] })
   assert.deepEqual(await widths(merged), [100, 101, 100])
+  assert.equal(merged?.pages, 3)
   const parts = await call('pdf.split', { file: merged?.file_id, ranges: ['1-2', '3'] })
-  assert.deepEqual(parts.map(({ name }) => name), ['pages-1-2.pdf', 'pages-3.pdf'])
+  assert.deepEqual(parts.map(({ name, pages }) => [name, pages]), [['pages-1-2.pdf', 2], ['pages-3.pdf', 1]])
   assert.deepEqual(await widths(parts[0]), [100, 101])
   assert.deepEqual(await widths(parts[1]), [100])
   assert.deepEqual(readdirSync(join(data, 'work')), [])
@@ -250,6 +252,7 @@ test('upload two PDFs, merge them, split the result and download the parts', asy
 test('downloads are attachments that the browser must not sniff, SVG included', async () => {
   const [svg] = await call('qr.create', { text: 'hello', format: 'svg' })
   const response = await fetch(local(svg?.download_url ?? ''))
+  assert.equal(svg?.pages, undefined)
   assert.equal(response.headers.get('content-type'), 'image/svg+xml')
   assert.equal(response.headers.get('content-disposition'), 'attachment; filename=qr.svg')
   assert.equal(response.headers.get('x-content-type-options'), 'nosniff')

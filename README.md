@@ -26,6 +26,7 @@ node scripts/tools.ts  # the built tools against qpdf, poppler and zbar; pass yo
 node scripts/store.ts  # the built store: secrets on disk, kill -9, simultaneous openings and speed
 node scripts/runner.ts # the built runner: PDF bombs, the queue, kill -9 to the parent and speed
 node scripts/agent.ts  # the built server with curl: upload, merge, split, download, limits and memory
+node scripts/mcp.ts    # the built server with the official MCP client in 2025-11-25 and 2026-07-28, and tools/list size
 ```
 
 `npm start` runs Node with `--max-semi-space-size=1`. With the default young generation, the server collects the buffers of an upload late: a 50 MB upload grew it by about 42 MB, against 13 MB with the flag. Any other way of starting the server needs the same flag.

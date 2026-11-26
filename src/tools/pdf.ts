@@ -22,7 +22,7 @@ export const pdfMerge = defineTool({
       const source = await load(context, id)
       await append(merged, source, source.getPageIndices())
     }
-    return [{ name: 'merged.pdf', mime, data: await save(merged) }]
+    return [{ name: 'merged.pdf', mime, data: await save(merged), pages: merged.getPageCount() }]
   },
 })
 
@@ -47,7 +47,7 @@ export const pdfSplit = defineTool({
     for (const { range, pages } of parts) {
       const part = await PDFDocument.create()
       await append(part, source, pages)
-      outputs.push({ name: `pages-${range}.pdf`, mime, data: await save(part) })
+      outputs.push({ name: `pages-${range}.pdf`, mime, data: await save(part), pages: pages.length })
     }
     return outputs
   },
