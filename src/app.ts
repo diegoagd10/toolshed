@@ -51,6 +51,9 @@ async function createApp(module: Type | DynamicModule) {
     abortOnError: false,
     logger: ['error', 'warn'],
     bodyParser: false,
+    // On SIGTERM, a kept-alive socket, such as one left by an MCP listen stream, would hold the
+    // process for up to 5 s.
+    forceCloseConnections: true,
   })
   app.useBodyParser('json', { limit: '1mb' })
   app.disable('x-powered-by')

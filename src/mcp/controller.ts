@@ -1,6 +1,6 @@
 import { pipeline, Readable } from 'node:stream'
 import type { ReadableStream } from 'node:stream/web'
-import { All, Controller, Inject, type OnModuleDestroy, Req, Res } from '@nestjs/common'
+import { All, Controller, Inject, Req, Res } from '@nestjs/common'
 import { createMcpHandler, type McpHttpHandler, type McpRequestContext } from '@modelcontextprotocol/server'
 import type { Request, Response } from 'express'
 import { authenticate } from '../agent/auth.js'
@@ -21,7 +21,7 @@ function webRequest(request: Request) {
 }
 
 @Controller()
-export class McpController implements OnModuleDestroy {
+export class McpController {
   readonly #context: AgentContext
   readonly #handler: McpHttpHandler
 
@@ -45,9 +45,5 @@ export class McpController implements OnModuleDestroy {
     answer.headers.forEach((value, name) => response.setHeader(name, value))
     if (!answer.body) return response.end()
     pipeline(Readable.fromWeb(answer.body as ReadableStream), response, () => undefined)
-  }
-
-  onModuleDestroy() {
-    return this.#handler.close()
   }
 }

@@ -219,11 +219,12 @@ test('an internal error shows no detail, and every MCP call is recorded as mcp',
   ])
 })
 
-test('SIGTERM ends an open listen stream, so the server still stops', async () => {
+// A kept-alive socket would hold the process for up to 5 s after SIGTERM.
+test('SIGTERM stops the server in under 2 s with a listen stream open', { timeout: 15_000 }, async () => {
   const server = await startServer()
   const client = await connect('2026-07-28', server.port)
   await client.listen({ toolsListChanged: true })
   const stopped = server.stop()
-  assert.equal(await Promise.race([stopped.then(() => 'stopped'), sleep(5_000)
+  assert.equal(await Promise.race([stopped.then(() => 'stopped'), sleep(2_000)
     .then(() => 'still running')]), 'stopped')
 })
