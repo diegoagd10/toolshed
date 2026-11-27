@@ -17,6 +17,16 @@ npm start
 
 Both ports answer `GET /health`. The dashboard is on the admin port: sign in with `OWNER_PASSWORD`, then make and revoke a key for each agent. Its forms only work from `ADMIN_URL`, so open it at exactly that origin. To connect an agent, paste `set up toolshed: <PUBLIC_URL>/llms.txt` into it; it shows you a code, and you type the code on Start. `AGENT_PORT` and `ADMIN_PORT` change the ports, which default to 4400 and 4401. An agent starts at `<PUBLIC_URL>/llms.txt`.
 
+## Docker
+
+```sh
+cp .env.example .env   # OWNER_PASSWORD, PUBLIC_URL and ADMIN_URL; DATA is /data inside
+docker compose up -d --build --wait
+scripts/backup.sh backups   # a copy of the database made with VACUUM INTO, while it runs
+```
+
+The image is Node 24 Alpine with `setpriv`, runs as `node`, and its file system is read-only except the `data` volume at `/data` and a `/tmp` tmpfs. The container may use 1 GB: about 70 MB idle and two tool jobs of up to 392 MB each. Both ports are published on `127.0.0.1` only; `ADMIN_HOST` publishes 4401 on another address, and `AGENT_HOST_PORT` and `ADMIN_HOST_PORT` change the host ports. To restore a backup, put it as `toolshed.db`, owned by uid 1000 with mode 600, in an empty volume. The database holds the keys, the dashboard sessions and the secret of the download links, so all of them survive a restart and a restore.
+
 ## Check
 
 ```sh
@@ -30,6 +40,7 @@ node scripts/mcp.ts    # the built server with the official MCP client in 2025-1
 node scripts/admin.ts  # the dashboard in headless Chromium: login, keys, escaping, cross-origin forms, widths and speed
 node scripts/pair.ts claude 5  # real agents pair and make a QR (also: codex 1); `checks` for load and the lockout
 node scripts/limits.ts # a 20 MB disk filled until 507, secrets searched in the logs of every flow, and memory after 1000 QR codes
+scripts/e2e.sh         # the image with compose on 14400 and 14401: the live checks of T4 to T7, bombs, restart, backup and memory; also live, docker or perf
 ```
 
 To see a change in the running app, with screenshots, follow `.claude/skills/verify-toolshed/SKILL.md`:

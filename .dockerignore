@@ -1,0 +1,9 @@
+*
+!package.json
+!package-lock.json
+!.npmrc
+!tsconfig.json
+!vite.config.ts
+!src
+!drizzle
+src/**/*.test.ts

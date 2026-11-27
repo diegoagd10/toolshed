@@ -1,4 +1,4 @@
-import { createHash, randomBytes, timingSafeEqual } from 'node:crypto'
+import { createHash, timingSafeEqual } from 'node:crypto'
 import type { Config } from '../config.js'
 import type { Pairs } from '../pair/pairs.js'
 import { SlidingWindow } from '../limits/window.js'
@@ -13,7 +13,8 @@ function digest(text: string) {
     .digest()
 }
 
-// Sessions live in memory: a restart signs the owner out, and nothing about them reaches the disk.
+// Sessions are stored, so a restart keeps the owner signed in. A new key's secret and notices
+// live in memory only.
 export class AdminContext {
   readonly config: Config
   readonly store: Store
@@ -22,7 +23,6 @@ export class AdminContext {
   // Six wrong pairing codes in a minute block the next attempt, the right code included.
   readonly pairLimiter = new SlidingWindow(60_000, 6)
   readonly pairs: Pairs
-  readonly #sessions = new Map<string, number>()
   // A new key's secret, kept until the next page view of the session that created it.
   readonly #created = new Map<string, Created>()
   readonly #notices = new Map<string, Notice>()
@@ -38,18 +38,16 @@ export class AdminContext {
   }
 
   openSession() {
-    const token = randomBytes(32)
-      .toString('base64url')
-    this.#sessions.set(token, Date.now() + sessionMs)
+    const token = this.store.sessions.open(sessionMs)
     return { token, maxAge: sessionMs / 1000 }
   }
 
   validSession(token: string) {
-    return (this.#sessions.get(token) ?? 0) > Date.now()
+    return this.store.sessions.valid(token)
   }
 
   closeSession(token: string) {
-    this.#sessions.delete(token)
+    this.store.sessions.close(token)
     this.#created.delete(token)
     this.#notices.delete(token)
   }

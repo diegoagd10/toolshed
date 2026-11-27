@@ -10,6 +10,7 @@ import { FilesRepository } from '../files/repository.js'
 import { KeysRepository } from '../keys/repository.js'
 import { Links } from '../links/links.js'
 import { LinksRepository } from '../links/repository.js'
+import { SessionsRepository } from '../sessions/repository.js'
 import { StoreError } from './error.js'
 
 const lockTimeoutMs = 5000
@@ -26,6 +27,7 @@ export function openStore(dataDir: string, maxDiskBytes = defaultMaxDiskBytes) {
       keys: new KeysRepository(database),
       calls: new CallsRepository(database),
       files: new FilesRepository(database, dataDir, maxDiskBytes),
+      sessions: new SessionsRepository(database),
       links: new Links(new LinksRepository(database)
         .secret()),
       close() {

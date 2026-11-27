@@ -1,0 +1,27 @@
+services:
+  toolshed:
+    build: .
+    image: toolshed
+    restart: unless-stopped
+    environment:
+      OWNER_PASSWORD: ${OWNER_PASSWORD:?set OWNER_PASSWORD in .env}
+      PUBLIC_URL: ${PUBLIC_URL:?set PUBLIC_URL in .env}
+      ADMIN_URL: ${ADMIN_URL:?set ADMIN_URL in .env}
+      MAX_DISK_MB: ${MAX_DISK_MB:-5120}
+    ports:
+      # Only the tunnel reaches the agent port, and only the local proxy the admin port.
+      - 127.0.0.1:${AGENT_HOST_PORT:-4400}:4400
+      - ${ADMIN_HOST:-127.0.0.1}:${ADMIN_HOST_PORT:-4401}:4401
+    volumes:
+      - data:/data
+    read_only: true
+    tmpfs:
+      - /tmp
+    # 70 MB idle and two tool jobs of up to 392 MB each.
+    mem_limit: 1g
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    init: true
+
+volumes:
+  data:
