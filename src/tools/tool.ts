@@ -5,6 +5,7 @@ export type ToolErrorCode =
   | 'file_not_found'
   | 'invalid_input'
   | 'not_a_pdf'
+  | 'too_many_pages'
   | 'tool_not_found'
 
 export class ToolError extends Error {

@@ -1,5 +1,5 @@
-import { Body, Controller, HttpCode, Inject, Post, Res } from '@nestjs/common'
-import type { Response } from 'express'
+import { Body, Controller, HttpCode, Inject, Post, Req, Res } from '@nestjs/common'
+import type { Request, Response } from 'express'
 import { z } from 'zod'
 import { ApiError, invalidInput } from '../agent/errors.js'
 import { PairContext } from './context.js'
@@ -32,7 +32,15 @@ export class PairController {
 
   @Post()
   @HttpCode(200)
-  start(@Body() body: unknown) {
+  start(@Body() body: unknown, @Req() request: Request) {
+    // This port is reached through Cloudflare, which sets the header to the client's address.
+    const ip = request.get('cf-connecting-ip') ?? String(request.socket.remoteAddress)
+    const { starts } = this.#context
+    const wait = starts.take(ip)
+    if (wait > 0) {
+      const message = `an address can start ${starts.max} pairings a minute; try again in ${wait} s`
+      throw new ApiError(429, 'rate_limited', message, [['Retry-After', String(wait)]])
+    }
     const parsed = startRequest.safeParse(body)
     if (!parsed.success) throw invalidInput(parsed.error)
     const { pairs } = this.#context

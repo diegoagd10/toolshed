@@ -87,8 +87,10 @@ export async function receiveUpload(
   request: Request,
 ) {
   const { name } = verified(context, 'PUT', id, query, uploadQuery)
-  if (Number(request.headers['content-length'] ?? 0) > maxUploadBytes) throw tooLarge()
-  const file = await context.store.files.save(name, 'application/octet-stream', Readable.from(limited(request)))
+  const declared = Number(request.headers['content-length'] ?? 0)
+  if (declared > maxUploadBytes) throw tooLarge()
+  const content = Readable.from(limited(request))
+  const file = await context.store.files.save(name, 'application/octet-stream', content, declared)
   return describe(context, file)
 }
 

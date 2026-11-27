@@ -6,7 +6,7 @@ import type { RunnerErrorCode } from '../runner/runner.js'
 import { TOOLS } from '../tools/registry.js'
 import type { ToolErrorCode } from '../tools/tool.js'
 import type { AgentContext } from './context.js'
-import { ApiError, invalidInput } from './errors.js'
+import { ApiError, invalidInput, toApiError } from './errors.js'
 import { describe } from './files.js'
 
 function statusOf(code: ToolErrorCode | RunnerErrorCode) {
@@ -47,8 +47,8 @@ async function run(context: AgentContext, id: string, body: unknown) {
   }
   try {
     const files = []
-    for (const { name, mime, path, pages } of result.files) {
-      const saved = await context.store.files.save(name, mime, createReadStream(path))
+    for (const { name, mime, path, bytes, pages } of result.files) {
+      const saved = await context.store.files.save(name, mime, createReadStream(path), bytes)
       files.push(describe(context, saved, pages))
     }
     return { files }
@@ -64,13 +64,20 @@ export async function callTool(
   body: unknown,
   via: 'rest' | 'mcp',
 ) {
+  // A refused call is not recorded, so a runaway agent cannot grow the activity log either.
+  const wait = context.calls.take(keyId)
+  if (wait > 0) {
+    const message = `a key can make ${context.calls.max} tool calls a minute; try again in ${wait} s`
+    throw new ApiError(429, 'rate_limited', message, [['Retry-After', String(wait)]])
+  }
   const started = performance.now()
   let error: string | null = null
   try {
     return await run(context, id, body)
   } catch (caught) {
-    error = caught instanceof ApiError ? caught.code : 'internal'
-    throw caught
+    const known = toApiError(caught)
+    error = known.code
+    throw known
   } finally {
     context.store.calls.record({
       at: new Date()

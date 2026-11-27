@@ -79,16 +79,21 @@ function approve(code: string, at = server, session = cookie) {
   return form(at.admin, '/pair/approve', [['code', code]], adminUrl, session)
 }
 
-function json(port: number, path: string, body: unknown) {
-  return fetch(`http://localhost:${port}${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
+// Each agent has its own address, as Cloudflare reports it, unless a test says otherwise.
+let addresses = 0
+function address() {
+  addresses++
+  return `198.51.${Math.floor(addresses / 256)}.${addresses % 256}`
 }
 
-async function start(agent: string, at = server) {
-  const response = await json(at.agent, '/pair', { agent })
+function json(port: number, path: string, body: unknown, ip: string | null = address()) {
+  const headers = new Headers({ 'Content-Type': 'application/json' })
+  if (ip !== null) headers.set('CF-Connecting-IP', ip)
+  return fetch(`http://localhost:${port}${path}`, { method: 'POST', headers, body: JSON.stringify(body) })
+}
+
+async function start(agent: string, at = server, ip = address()) {
+  const response = await json(at.agent, '/pair', { agent }, ip)
   assert.equal(response.status, 200)
   return (await response.json()) as Started
 }
@@ -213,6 +218,28 @@ test('at most 20 agents wait for the owner at once', async () => {
   assert.equal(refused.status, 429)
   assert.equal(refused.headers.get('retry-after'), '60')
   assert.equal(((await refused.json()) as Answer['body']).error?.code, 'too_many_pairs')
+})
+
+test('an address starts at most 5 pairings a minute, and another address still can', async () => {
+  const ip = address()
+  const started = []
+  for (let attempt = 0; attempt < 5; attempt++) started.push(await start(`agent ${attempt}`, server, ip))
+  const refused = await json(server.agent, '/pair', { agent: 'sixth' }, ip)
+  assert.equal(refused.status, 429)
+  assert.ok(Number(refused.headers.get('retry-after')) <= 60)
+  const body = (await refused.json()) as Answer['body'] & { error: { message: string } }
+  assert.equal(body.error?.code, 'rate_limited')
+  assert.match(body.error.message, /^an address can start 5 pairings a minute; try again in \d+ s$/)
+  assert.equal((await claim(String(started[0]?.pair_id), 0)).status, 202, 'waiting is not limited')
+  await start('another address')
+})
+
+test('without the Cloudflare header the limit applies to the connecting address', async () => {
+  const statuses = []
+  for (let attempt = 0; attempt < 6; attempt++) {
+    statuses.push((await json(server.agent, '/pair', { agent: 'direct' }, null)).status)
+  }
+  assert.deepEqual(statuses, [200, 200, 200, 200, 200, 429])
 })
 
 test('SIGTERM does not wait for a token request that is still holding', async () => {

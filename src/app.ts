@@ -1,12 +1,11 @@
-import { mkdirSync } from 'node:fs'
 import type { AddressInfo } from 'node:net'
-import { join } from 'node:path'
 import type { DynamicModule, Type } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
 import type { NestExpressApplication } from '@nestjs/platform-express'
 import { AdminContext } from './admin/context.js'
 import { AdminModule } from './admin/modules.js'
 import { AgentContext } from './agent/context.js'
+import { logError } from './agent/errors.js'
 import { AgentModule } from './agent/modules.js'
 import type { Config } from './config.js'
 import { McpModule } from './mcp/modules.js'
@@ -21,11 +20,16 @@ export type Running = { ports: Ports, close: () => Promise<void> }
 
 class AgentPort {}
 
+const cleanEveryMs = 10 * 60 * 1000
+
 export async function start(config: Config): Promise<Running> {
-  const store = openStore(config.DATA)
-  const workDir = join(config.DATA, 'work')
-  mkdirSync(workDir, { recursive: true, mode: 0o700 })
-  const context = new AgentContext(config, store, new Runner(), workDir)
+  const store = openStore(config.DATA, config.MAX_DISK_MB * 2 ** 20)
+  // Files expire after 24 hours. Cleaning at start also removes what a crash left behind.
+  const clean = () => store.files.clean()
+    .catch(logError)
+  await clean()
+  const cleaning = setInterval(clean, cleanEveryMs)
+  const context = new AgentContext(config, store, new Runner(), store.files.workDir)
   // One set of pairing requests: agents start them on 4400 and the owner approves them on 4401.
   const pairs = new Pairs()
   // Port 4400 serves the REST API and MCP. Neither module is reachable from 4401.
@@ -40,7 +44,11 @@ export async function start(config: Config): Promise<Running> {
   const admin = await createApp(AdminModule.register(new AdminContext(config, store, pairs)))
   admin.useBodyParser('urlencoded', { limit: '16kb', extended: false })
   const close = async () => {
+    clearInterval(cleaning)
     await Promise.all([agent.close(), admin.close()])
+    // A clean in progress must end before the database closes. Joining it or running one more
+    // is harmless.
+    await clean()
     store.close()
   }
   try {

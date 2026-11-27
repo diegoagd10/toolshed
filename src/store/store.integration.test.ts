@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { spawn } from 'node:child_process'
-import { mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readdir, readFile, rm, stat, symlink, utimes, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
@@ -240,6 +240,67 @@ test('a file that fails to be recorded leaves nothing', async () => {
   assert.match(answer?.error ?? '', /SqliteError: no$/)
   assert.deepEqual(await readdir(join(dir, 'files')), [])
   assert.deepEqual(await readdir(join(dir, 'partial')), [])
+})
+
+async function state(dir: string) {
+  const opened = new DatabaseSync(join(dir, 'toolshed.db'))
+  const ids = opened.prepare('SELECT id FROM files ORDER BY id')
+    .all()
+    .map(({ id }) => String(id))
+  opened.close()
+  const listed = async (name: string) => (await readdir(join(dir, name))).sort()
+  return { rows: ids, files: await listed('files'), partial: await listed('partial'), work: await listed('work') }
+}
+
+async function cleanTwice(dir: string) {
+  assert.equal(await ask(dir, { do: 'file.clean' }), null)
+  const first = await state(dir)
+  assert.equal(await ask(dir, { do: 'file.clean' }), null)
+  assert.deepEqual(await state(dir), first, 'a second clean changes nothing')
+  return first
+}
+
+async function age(path: string) {
+  const hourAgo = new Date(Date.now() - 61 * 60 * 1000)
+  await utimes(path, hourAgo, hourAgo)
+}
+
+test('cleaning deletes expired files and keeps the others, and twice gives the same state', async () => {
+  const dir = await dataDir()
+  const kept = await saveFile(dir, 'kept')
+  const expired = await saveFile(dir, 'expired')
+  const opened = await database(dir)
+  opened.prepare('UPDATE files SET expires_at = ? WHERE id = ?')
+    .run(Date.now(), expired.id)
+  const expected = { rows: [kept.id], files: [kept.id], partial: [], work: [] }
+  assert.deepEqual(await cleanTwice(dir), expected)
+  assert.equal((await ask<Found>(dir, { do: 'file.find', id: kept.id })).file.id, kept.id)
+})
+
+test('after a crash, cleaning deletes rows without a file, files without a row and old leftovers', async () => {
+  const dir = await dataDir()
+  const kept = await saveFile(dir, 'kept')
+  const lost = await saveFile(dir, 'its file is gone')
+  const orphan = await saveFile(dir, 'its row is gone')
+  const arriving = await saveFile(dir, 'its row may be coming')
+  await rm(join(dir, 'files', lost.id))
+  const opened = await database(dir)
+  opened.prepare('DELETE FROM files WHERE id IN (?, ?)')
+    .run(orphan.id, arriving.id)
+  await age(join(dir, 'files', orphan.id))
+  for (const name of ['old', 'young']) await writeFile(join(dir, 'partial', name), 'x')
+  await age(join(dir, 'partial', 'old'))
+  // An entry that goes away while the folder is read is skipped.
+  await symlink(join(dir, 'nowhere'), join(dir, 'partial', 'vanished'))
+  await mkdir(join(dir, 'work', 'job.partial'))
+  await writeFile(join(dir, 'work', 'job.partial', '0'), 'x')
+  await age(join(dir, 'work', 'job.partial'))
+  assert.deepEqual(await cleanTwice(dir), {
+    rows: [kept.id],
+    files: [kept.id, arriving.id].sort(),
+    partial: ['vanished', 'young'],
+    work: [],
+  })
 })
 
 test('a signed link is valid, after a restart too', async () => {

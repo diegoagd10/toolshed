@@ -103,7 +103,7 @@ export class AdminController {
       return page(response, 429, loginPage(`Too many wrong passwords. Try again in ${wait} s.`))
     }
     if (!this.#context.passwordMatches(loginForm.parse(request.body).password)) {
-      limiter.fail()
+      limiter.add()
       return page(response, 401, loginPage('Wrong password.'))
     }
     const { token, maxAge } = this.#context.openSession()
@@ -148,7 +148,7 @@ export class AdminController {
     }
     const agent = pairs.approve(pairForm.parse(request.body).code)
     if (agent === undefined) {
-      pairLimiter.fail()
+      pairLimiter.add()
       const text = 'No agent is waiting with that code. Check it and type it again.'
       return this.#start(response, 422, { ok: false, text })
     }

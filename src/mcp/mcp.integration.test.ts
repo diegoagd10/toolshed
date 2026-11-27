@@ -77,11 +77,11 @@ afterAll(async () => {
   await rm(data, { recursive: true, force: true })
 })
 
-async function connect(version?: string, at = port) {
+async function connect(version?: string, at = port, secret = key) {
   const options = version ? { versionNegotiation: { mode: { pin: version } } } : {}
   const client = new Client({ name: 'toolshed test', version: '1.0.0' }, options)
   const transport = new StreamableHTTPClientTransport(new URL(`http://localhost:${at}/mcp`), {
-    requestInit: { headers: { Authorization: `Bearer ${key}` } },
+    requestInit: { headers: { Authorization: `Bearer ${secret}` } },
   })
   await client.connect(transport)
   onTestFinished(() => client.close())
@@ -220,6 +220,24 @@ test('an internal error shows no detail, and every MCP call is recorded as mcp',
 })
 
 // A kept-alive socket would hold the process for up to 5 s after SIGTERM.
+test('REST and MCP share the 60 calls a minute of a key', async () => {
+  const [created] = await store({ do: 'key.create', name: 'busy agent' })
+  const { secret } = created as { secret: string }
+  for (let attempt = 0; attempt < 60; attempt++) {
+    await fetch(`http://localhost:${port}/v1/call/pdf.rotate`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${secret}`, 'Content-Type': 'application/json' },
+      body: '{}',
+    })
+  }
+  const client = await connect(undefined, port, secret)
+  const { answer, body } = await call(client, 'qr_create', { text: 'one too many' })
+  assert.equal(answer.isError, true)
+  assert.equal((body as { error: { code: string } }).error.code, 'rate_limited')
+  const other = await call(await connect(), 'qr_create', { text: 'another key' })
+  assert.ok(!other.answer.isError)
+})
+
 test('SIGTERM stops the server in under 2 s with a listen stream open', { timeout: 15_000 }, async () => {
   const server = await startServer()
   const client = await connect('2026-07-28', server.port)

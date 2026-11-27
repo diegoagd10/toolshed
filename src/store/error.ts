@@ -1,4 +1,4 @@
-export type StoreErrorCode = 'database_too_new' | 'file_not_found'
+export type StoreErrorCode = 'database_too_new' | 'disk_full' | 'file_not_found'
 
 export class StoreError extends Error {
   override name = 'StoreError'

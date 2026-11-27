@@ -1,7 +1,7 @@
 import { type CallToolResult, McpServer } from '@modelcontextprotocol/server'
 import { callTool } from '../agent/call.js'
 import type { AgentContext } from '../agent/context.js'
-import { ApiError } from '../agent/errors.js'
+import { toApiError } from '../agent/errors.js'
 import { startUpload, uploadRequest } from '../agent/files.js'
 import { TOOLS } from '../tools/registry.js'
 
@@ -29,9 +29,7 @@ function success(result: object, files: Described[] = []): CallToolResult {
 
 // A tool error is an answer the agent can act on, with the same code as the REST API.
 function failure(error: unknown): CallToolResult {
-  const known = error instanceof ApiError ? error : new ApiError(500, 'internal', 'internal error')
-  if (known !== error) console.error(error)
-  const { code, message } = known
+  const { code, message } = toApiError(error)
   return { isError: true, content: [{ type: 'text', text: JSON.stringify({ error: { code, message } }) }] }
 }
 
