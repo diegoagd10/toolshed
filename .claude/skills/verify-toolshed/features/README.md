@@ -31,3 +31,4 @@ The maintained list of what an owner or an agent can do with toolshed, and how t
 | [agent-rest.md](agent-rest.md) | Upload, run a tool and download over REST | agent |
 | [agent-mcp.md](agent-mcp.md) | The same through MCP | agent |
 | [agent-pairing.md](agent-pairing.md) | Connect an agent with a code typed on Start | agent and admin |
+| [agent-limits.md](agent-limits.md) | Rate limits, the disk limit, pages per PDF and cleanup | agent |

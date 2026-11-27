@@ -195,7 +195,9 @@ test('once files expire, the next upload makes room by deleting them', async () 
   assert.equal((await readdir(join(data, 'files'))).length, 1)
 })
 
+// The leftovers appear while the server is down, as after a crash.
 test('a restart deletes expired files and what a crash left in the work folders', async () => {
+  await server.stop()
   const hourAgo = new Date(Date.now() - 61 * 60 * 1000)
   const leftovers = [join(data, 'partial', 'file_cut'), join(data, 'work', 'job.job.json'), join(data, 'files', 'file_orphan')]
   for (const path of leftovers) {
@@ -207,7 +209,6 @@ test('a restart deletes expired files and what a crash left in the work folders'
   const young = join(data, 'partial', 'file_arriving')
   await writeFile(young, 'x')
   expireEveryFile()
-  await server.stop()
   server = await startServer()
   assert.equal(rows(), 0)
   assert.deepEqual(await readdir(join(data, 'files')), [])
