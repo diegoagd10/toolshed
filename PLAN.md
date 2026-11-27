@@ -189,11 +189,11 @@ T1 y T3 son independientes y salen de `main`. T4 y T6 tocan `src/main.ts`: entra
 **Cambio:** imagen Node 24 Alpine, usuario sin root, sistema de archivos de solo lectura salvo `DATA` y `/tmp`, `mem_limit: 1g` (70 MB en reposo más dos picos de 392 MB), healthcheck y respaldo con `VACUUM INTO`.
 **Resultado:** `docker compose up` lo levanta completo.
 
-- [ ] **Unit:** `docker compose config -q` termina en 0. La imagen no contiene `.env` ni archivos de test.
-- [ ] **Live:** `scripts/e2e.sh` repite las cajas live de T4 a T7 contra el contenedor.
-- [ ] **Live:** Dos PDFs maliciosos a la vez dentro del contenedor. Ambos dan `too_much_memory`, y `RestartCount` sigue en 0.
-- [ ] **Live:** `docker compose restart`. Los keys y la sesión siguen. Restaura un respaldo en una carpeta vacía y un key viejo autentica.
-- [ ] **Perf:** memoria `anon` en reposo, 5 corridas. El prototipo dio 69 MB [63-71]. Falla arriba de 100 MB. Dos uniones de 20 MB a la vez fallan arriba de 600 MB.
+- [x] **Unit:** `docker compose config -q` termina en 0. La imagen no contiene `.env` ni archivos de test.
+- [x] **Live:** `scripts/e2e.sh` repite las cajas live de T4 a T7 contra el contenedor.
+- [x] **Live:** Dos PDFs maliciosos a la vez dentro del contenedor. Ambos dan `too_much_memory`, y `RestartCount` sigue en 0.
+- [x] **Live:** `docker compose restart`. Los keys y la sesión siguen. Restaura un respaldo en una carpeta vacía y un key viejo autentica.
+- [x] **Perf:** memoria `anon` en reposo, 5 corridas. El prototipo dio 69 MB [63-71]. Falla arriba de 100 MB. Dos uniones de 20 MB a la vez fallan arriba de 600 MB.
 
 ## T10. Despliegue en tu red
 

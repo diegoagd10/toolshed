@@ -368,7 +368,7 @@ async function openFirstVersion(dir: string) {
 
 async function dump(dir: string) {
   const opened = await database(dir)
-  const tables = ['sqlite_schema', 'keys', 'calls', 'files', 'secrets', '__drizzle_migrations']
+  const tables = ['sqlite_schema', 'keys', 'calls', 'files', 'secrets', 'sessions', '__drizzle_migrations']
   return tables.map((table) => opened.prepare(`SELECT * FROM ${table}`)
     .all())
 }
@@ -380,7 +380,8 @@ test('a database of the first version migrates without losing rows, and opening 
   const [call] = await ask<Call[]>(dir, { do: 'call.list', limit: 9 })
   assert.deepEqual([key?.id, key?.name, call?.keyId, call?.ms], ['key_1', 'old', 'key_1', 5])
   const before = await dump(dir)
-  assert.equal(before.at(-1)?.length, 2)
+  const journal = JSON.parse(await readFile(join(migrationsDir, 'meta/_journal.json'), 'utf8')) as { entries: object[] }
+  assert.equal(before.at(-1)?.length, journal.entries.length)
   await answers(dir, { do: 'key.list' })
   assert.deepEqual(await dump(dir), before)
   assert.equal(opened.prepare('PRAGMA foreign_key_check')

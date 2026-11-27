@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
 import { once } from 'node:events'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createInterface } from 'node:readline'
@@ -276,6 +276,19 @@ test('signing out ends the session', async () => {
   assert.equal(response.headers.get('location'), '/login')
   assert.match(String(response.headers.get('set-cookie')), /^toolshed_session=; .*Max-Age=0$/)
   assert.equal((await get('/', session)).headers.get('location'), '/login')
+})
+
+test('a session outlives a restart, and only its hash reaches the disk', async () => {
+  const session = await signIn()
+  const token = session.cookie.split('=')[1]
+  await server.stop()
+  server = await startServer({ ADMIN_URL: adminUrl })
+  const restarted = { ...session, port: server.admin }
+  assert.equal((await get('/', restarted)).status, 200)
+  const database = await readFile(join(data, 'toolshed.db'))
+  assert.ok(!database.includes(String(token)), 'the token is not stored')
+  await post('/logout', [], restarted)
+  assert.equal((await get('/', restarted)).headers.get('location'), '/login')
 })
 
 test('the agent port has no dashboard pages', async () => {
