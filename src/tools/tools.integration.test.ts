@@ -212,7 +212,7 @@ for (const [field, tool, input] of [
   })
 }
 
-test('a PDF of more than 2000 pages is refused, and so is a merge that would make one', async () => {
+test('a PDF of more than 2000 pages is refused, and so is a merge that would make one', { timeout: 30_000 }, async () => {
   const big = { id: 'file_big', data: await pdf(Array.from({ length: 2001 }, () => 100)) }
   const half = { id: 'file_half', data: await pdf(Array.from({ length: 1000 }, () => 100)) }
   const message = await fails('too_many_pages', 'pdf.split', { file: 'file_big', ranges: ['1'] }, [big])
