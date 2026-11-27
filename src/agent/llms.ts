@@ -38,7 +38,8 @@ Do this once, when you have no key.
 - Run one curl per shell command.
 - MCP clients connect to ${base}/mcp over Streamable HTTP, with the same Authorization header. Upload with the file_upload tool.
 - PDF results carry pages, the page count of each file.
-- Errors come as {"error":{"code":"...","message":"..."}}. On 503 busy, wait the seconds in Retry-After and send the same request again.
+- A key can run 60 tools a minute. A PDF can have up to 2000 pages.
+- Errors come as {"error":{"code":"...","message":"..."}}. On 429 rate_limited or 503 busy, wait the seconds in Retry-After and send the same request again. On 507 disk_full the server has no room until older files expire; tell the owner.
 
 ## Tools
 

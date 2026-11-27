@@ -13,7 +13,7 @@ npm run build
 npm start
 ```
 
-`OWNER_PASSWORD`, `PUBLIC_URL` and `ADMIN_URL` are required. The URLs are origins, such as `https://tools.example.com`. `DATA` defaults to `./data`.
+`OWNER_PASSWORD`, `PUBLIC_URL` and `ADMIN_URL` are required. The URLs are origins, such as `https://tools.example.com`. `DATA` defaults to `./data`. `MAX_DISK_MB` caps the space stored files take, 5120 by default.
 
 Both ports answer `GET /health`. The dashboard is on the admin port: sign in with `OWNER_PASSWORD`, then make and revoke a key for each agent. Its forms only work from `ADMIN_URL`, so open it at exactly that origin. To connect an agent, paste `set up toolshed: <PUBLIC_URL>/llms.txt` into it; it shows you a code, and you type the code on Start. `AGENT_PORT` and `ADMIN_PORT` change the ports, which default to 4400 and 4401. An agent starts at `<PUBLIC_URL>/llms.txt`.
 
@@ -29,6 +29,7 @@ node scripts/agent.ts  # the built server with curl: upload, merge, split, downl
 node scripts/mcp.ts    # the built server with the official MCP client in 2025-11-25 and 2026-07-28, and tools/list size
 node scripts/admin.ts  # the dashboard in headless Chromium: login, keys, escaping, cross-origin forms, widths and speed
 node scripts/pair.ts claude 5  # real agents pair and make a QR (also: codex 1); `checks` for load and the lockout
+node scripts/limits.ts # a 20 MB disk filled until 507, secrets searched in the logs of every flow, and memory after 1000 QR codes
 ```
 
 To see a change in the running app, with screenshots, follow `.claude/skills/verify-toolshed/SKILL.md`:
@@ -38,6 +39,8 @@ VERIFY_RUN=my-change .claude/skills/verify-toolshed/verify.ts launch   # then do
 ```
 
 `npm start` runs Node with `--max-semi-space-size=1`. With the default young generation, the server collects the buffers of an upload late: a 50 MB upload grew it by about 42 MB, against 13 MB with the flag. Any other way of starting the server needs the same flag.
+
+A key runs 60 tools a minute, over REST and MCP together, and an address starts 5 pairings a minute; past that the answer is 429 with `Retry-After`. The address is the `CF-Connecting-IP` header on the agent port, so that port must be reached only through Cloudflare, which sets it; anyone who reaches it directly can choose their address. A PDF has up to 2000 pages. An upload or a result that does not fit in `MAX_DISK_MB` gives 507. At start and every 10 minutes the server deletes expired files, files without a row, rows without a file and leftovers older than an hour in `partial/` and `work/`.
 
 Each tool job runs in its own process, started through `setpriv --pdeathsig KILL` from util-linux, so the kernel kills it if the server dies. The server kills a job at 256 MB of RSS or after 30 s, runs 2 at a time and queues 10 more. Without `setpriv` on the `PATH` every job fails with `crashed`.
 

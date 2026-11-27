@@ -177,11 +177,11 @@ T1 y T3 son independientes y salen de `main`. T4 y T6 tocan `src/main.ts`: entra
 **Cambio:** 60 llamadas por minuto por key, 5 `/pair` por minuto por IP, 2000 páginas por PDF, 5 GB en disco, archivos borrados a las 24 h y logs sin secretos. La IP sale de `CF-Connecting-IP` solo en 4400.
 **Resultado:** un agente descontrolado no llena el disco.
 
-- [ ] **Unit:** la llamada 61 da 429 con `Retry-After`. Otro key sigue funcionando.
-- [ ] **Unit:** la limpieza borra lo vencido y conserva lo vigente. Correrla dos veces, o tras una caída, deja el mismo estado. También borra archivos sin fila y filas sin archivo.
-- [ ] **Live:** con el límite de disco en 20 MB, la subida que lo rebasa da 507 y la siguiente funciona después de limpiar.
-- [ ] **Live:** corre todos los flujos y busca el key, el código y la contraseña en los logs. Cero resultados.
-- [ ] **Perf:** RSS tras 1000 QR y 100 uniones. Falla si supera en más de 30 MB el valor tras las primeras 100 y 10.
+- [x] **Unit:** la llamada 61 da 429 con `Retry-After`. Otro key sigue funcionando.
+- [x] **Unit:** la limpieza borra lo vencido y conserva lo vigente. Correrla dos veces, o tras una caída, deja el mismo estado. También borra archivos sin fila y filas sin archivo.
+- [x] **Live:** con el límite de disco en 20 MB, la subida que lo rebasa da 507 y la siguiente funciona después de limpiar.
+- [x] **Live:** corre todos los flujos y busca el key, el código y la contraseña en los logs. Cero resultados.
+- [x] **Perf:** RSS tras 1000 QR y 100 uniones. Falla si supera en más de 30 MB el valor tras las primeras 100 y 10.
 
 ## T9. Docker
 

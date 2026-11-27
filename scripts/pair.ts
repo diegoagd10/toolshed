@@ -142,12 +142,13 @@ async function agents(agent: string, rounds: number) {
 
 async function checks() {
   const page = await owner()
-  const pair = async (agent: string) => (await (await fetch(`${agentUrl}/pair`, {
+  // 20 agents from 20 addresses, as Cloudflare would report them: one address starts 5 a minute.
+  const pair = async (agent: string, index: number) => (await (await fetch(`${agentUrl}/pair`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'CF-Connecting-IP': `198.51.100.${index}` },
     body: JSON.stringify({ agent }),
   })).json()) as { pair_id: string, code: string }
-  const waiting = await Promise.all(Array.from({ length: 20 }, (_, index) => pair(`waiting ${index}`)))
+  const waiting = await Promise.all(Array.from({ length: 20 }, (_, index) => pair(`waiting ${index}`, index)))
   const holds = waiting.map(({ pair_id: id }) => fetch(`${agentUrl}/pair/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

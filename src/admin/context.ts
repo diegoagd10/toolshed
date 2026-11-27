@@ -1,8 +1,8 @@
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto'
 import type { Config } from '../config.js'
 import type { Pairs } from '../pair/pairs.js'
+import { SlidingWindow } from '../limits/window.js'
 import type { Store } from '../store/repository.js'
-import { LoginLimiter } from './limiter.js'
 import type { Created, Notice } from './pages.js'
 
 const sessionMs = 30 * 24 * 60 * 60 * 1000
@@ -17,9 +17,10 @@ function digest(text: string) {
 export class AdminContext {
   readonly config: Config
   readonly store: Store
-  readonly limiter = new LoginLimiter()
+  // Five wrong passwords in a minute block the next attempt, the right password included.
+  readonly limiter = new SlidingWindow(60_000, 5)
   // Six wrong pairing codes in a minute block the next attempt, the right code included.
-  readonly pairLimiter = new LoginLimiter(60_000, 6)
+  readonly pairLimiter = new SlidingWindow(60_000, 6)
   readonly pairs: Pairs
   readonly #sessions = new Map<string, number>()
   // A new key's secret, kept until the next page view of the session that created it.

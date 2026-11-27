@@ -212,6 +212,17 @@ for (const [field, tool, input] of [
   })
 }
 
+test('a PDF of more than 2000 pages is refused, and so is a merge that would make one', { timeout: 30_000 }, async () => {
+  const big = { id: 'file_big', data: await pdf(Array.from({ length: 2001 }, () => 100)) }
+  const half = { id: 'file_half', data: await pdf(Array.from({ length: 1000 }, () => 100)) }
+  const message = await fails('too_many_pages', 'pdf.split', { file: 'file_big', ranges: ['1'] }, [big])
+  assert.equal(message, 'file_big has 2001 pages; the limit is 2000')
+  const [merged] = await succeeds('pdf.merge', { files: ['file_half', 'file_half'] }, [half])
+  assert.equal(merged?.pages, 2000)
+  const three = { files: ['file_half', 'file_half', 'file_a'] }
+  assert.equal(await fails('too_many_pages', 'pdf.merge', three, [half, a]), 'the result would have more than 2000 pages')
+})
+
 test('a missing file is named', async () => {
   const message = await fails('file_not_found', 'pdf.merge', { files: ['file_a', 'file_x'] }, [a])
   assert.match(message, /file_x/)

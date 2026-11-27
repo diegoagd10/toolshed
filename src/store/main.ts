@@ -24,6 +24,7 @@ const commandSchema = z.discriminatedUnion('do', [
   z.strictObject({ do: z.literal('call.list'), limit: z.int() }),
   z.strictObject({ do: z.literal('file.save'), name: z.string(), mime: z.string(), path: z.string() }),
   z.strictObject({ do: z.literal('file.find'), id: z.string() }),
+  z.strictObject({ do: z.literal('file.clean') }),
   z.strictObject({
     do: z.literal('link.sign'),
     method: z.string(),
@@ -51,6 +52,8 @@ async function run(store: Store, command: Command): Promise<unknown> {
     case 'call.list': return store.calls.recent(command.limit)
     case 'file.save': return store.files.save(command.name, command.mime, createReadStream(command.path))
     case 'file.find': return store.files.find(command.id)
+    case 'file.clean': return store.files.clean()
+      .then(() => null)
     case 'link.sign': return store.links.sign(command, command.lifetimeMs)
     case 'link.verify': return store.links.verify(command)
   }

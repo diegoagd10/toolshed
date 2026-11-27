@@ -4,11 +4,12 @@ import { prune } from './prune.js'
 import { defineTool, fileId, type ToolContext, ToolError } from './tool.js'
 
 const mime = 'application/pdf'
+const maxPages = 2000
 
 export const pdfMerge = defineTool({
   id: 'pdf.merge',
   title: 'Merge PDFs',
-  summary: 'Combine 2 to 50 PDFs into one, in the order given. Form fields stay visible but cannot be edited.',
+  summary: 'Combine 2 to 50 PDFs into one, in the order given, up to 2000 pages. Form fields stay visible but cannot be edited.',
   tags: ['pdf', 'combine', 'join'],
   input: z.strictObject({
     files: z.array(fileId)
@@ -20,6 +21,9 @@ export const pdfMerge = defineTool({
     const merged = await PDFDocument.create()
     for (const id of files) {
       const source = await load(context, id)
+      if (merged.getPageCount() + source.getPageCount() > maxPages) {
+        throw new ToolError('too_many_pages', `the result would have more than ${maxPages} pages`)
+      }
       await append(merged, source, source.getPageIndices())
     }
     return [{ name: 'merged.pdf', mime, data: await save(merged), pages: merged.getPageCount() }]
@@ -54,14 +58,24 @@ export const pdfSplit = defineTool({
 })
 
 async function load(context: ToolContext, id: string) {
-  const bytes = await context.read(id)
+  const parsed = await parse(await context.read(id))
+  if (!parsed || parsed.pages === 0) {
+    throw new ToolError('not_a_pdf', `${id} is not a readable, unencrypted PDF with pages`)
+  }
+  const { document, pages } = parsed
+  if (pages > maxPages) throw new ToolError('too_many_pages', `${id} has ${pages} pages; the limit is ${maxPages}`)
+  return document
+}
+
+async function parse(bytes: Uint8Array) {
   try {
     const document = await PDFDocument.load(bytes)
-    if (document.getPageCount() > 0) return document
+    // A file without a page tree loads, then fails here.
+    return { document, pages: document.getPageCount() }
   } catch {
     // Every parse failure, encryption included, has the same answer as a PDF without pages.
+    return undefined
   }
-  throw new ToolError('not_a_pdf', `${id} is not a readable, unencrypted PDF with pages`)
 }
 
 async function append(target: PDFDocument, source: PDFDocument, indices: number[]) {

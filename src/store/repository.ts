@@ -13,8 +13,9 @@ import { LinksRepository } from '../links/repository.js'
 import { StoreError } from './error.js'
 
 const lockTimeoutMs = 5000
+export const defaultMaxDiskBytes = 5 * 2 ** 30
 
-export function openStore(dataDir: string) {
+export function openStore(dataDir: string, maxDiskBytes = defaultMaxDiskBytes) {
   mkdirSync(dataDir, { recursive: true, mode: 0o700 })
   const client = open(join(dataDir, 'toolshed.db'))
   try {
@@ -24,7 +25,7 @@ export function openStore(dataDir: string) {
     return {
       keys: new KeysRepository(database),
       calls: new CallsRepository(database),
-      files: new FilesRepository(database, dataDir),
+      files: new FilesRepository(database, dataDir, maxDiskBytes),
       links: new Links(new LinksRepository(database)
         .secret()),
       close() {

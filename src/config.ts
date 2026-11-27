@@ -28,6 +28,10 @@ const schema = z.object({
     .default('./data'),
   AGENT_PORT: port.default(4400),
   ADMIN_PORT: port.default(4401),
+  MAX_DISK_MB: z.coerce.number('must be a whole number of megabytes')
+    .int('must be a whole number of megabytes')
+    .positive('must be a whole number of megabytes')
+    .default(5120),
 })
 
 export type Config = z.output<typeof schema>
@@ -39,6 +43,7 @@ export type Environment = {
   DATA?: string
   AGENT_PORT?: string
   ADMIN_PORT?: string
+  MAX_DISK_MB?: string
 }
 
 export function parseConfig(env: Environment): Config {
