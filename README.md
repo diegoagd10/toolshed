@@ -20,12 +20,12 @@ Both ports answer `GET /health`. The dashboard is on the admin port: sign in wit
 ## Docker
 
 ```sh
-cp .env.example .env   # OWNER_PASSWORD, PUBLIC_URL and ADMIN_URL; DATA is /data inside
+cp .env.example .env   # OWNER_PASSWORD, PUBLIC_URL, ADMIN_URL and TS_AUTHKEY; DATA is /data inside
 docker compose up -d --build --wait
 scripts/backup.sh backups   # a copy of the database made with VACUUM INTO, while it runs
 ```
 
-The image is Node 24 Alpine with `setpriv`, runs as `node`, and its file system is read-only except the `data` volume at `/data` and a `/tmp` tmpfs. The container may use 1 GB: about 70 MB idle and two tool jobs of up to 392 MB each. Both ports are published on `127.0.0.1` only; `ADMIN_HOST` publishes 4401 on another address, and `AGENT_HOST_PORT` and `ADMIN_HOST_PORT` change the host ports. To restore a backup, put it as `toolshed.db`, owned by uid 1000 with mode 600, in an empty volume. The database holds the keys, the dashboard sessions and the secret of the download links, so all of them survive a restart and a restore.
+The image is Node 24 Alpine with `setpriv`, runs as `node`, and its file system is read-only except the `data` volume at `/data` and a `/tmp` tmpfs. The container may use 1 GB: about 70 MB idle and two tool jobs of up to 392 MB each. The agent port is not published on the host. The `ts` service is a tailnet node of its own, `toolshed`, tagged `tag:toolshed`, that joins with `TS_AUTHKEY` and serves `https://toolshed.<tailnet>.ts.net` to `http://toolshed:4400` inside the tailnet only: `tailscale/serve.json` keeps Funnel off. Set `PUBLIC_URL` to that origin. Make the auth key with the tag `tag:toolshed` and not ephemeral, since the interactive login of the container stops after 60 s and the node must outlive a restart; its state stays in the `ts-state` volume. The admin port is published on `127.0.0.1`; `ADMIN_HOST` publishes it on another address and `ADMIN_HOST_PORT` changes the host port. `docker compose stop ts` cuts the agents off and leaves the dashboard up. To restore a backup, put it as `toolshed.db`, owned by uid 1000 with mode 600, in an empty volume. The database holds the keys, the dashboard sessions and the secret of the download links, so all of them survive a restart and a restore.
 
 ## Check
 
@@ -40,7 +40,7 @@ node scripts/mcp.ts    # the built server with the official MCP client in 2025-1
 node scripts/admin.ts  # the dashboard in headless Chromium: login, keys, escaping, cross-origin forms, widths and speed
 node scripts/pair.ts claude 5  # real agents pair and make a QR (also: codex 1); `checks` for load and the lockout
 node scripts/limits.ts # a 20 MB disk filled until 507, secrets searched in the logs of every flow, and memory after 1000 QR codes
-scripts/e2e.sh         # the image with compose on 14400 and 14401: the live checks of T4 to T7, bombs, restart, backup and memory; also live, docker or perf
+scripts/e2e.sh         # the image with compose on 14400 and 14401, without ts: the live checks of T4 to T7, bombs, restart, backup and memory; also live, docker or perf
 ```
 
 To see a change in the running app, with screenshots, follow `.claude/skills/verify-toolshed/SKILL.md`:
@@ -51,7 +51,7 @@ VERIFY_RUN=my-change .claude/skills/verify-toolshed/verify.ts launch   # then do
 
 `npm start` runs Node with `--max-semi-space-size=1`. With the default young generation, the server collects the buffers of an upload late: a 50 MB upload grew it by about 42 MB, against 13 MB with the flag. Any other way of starting the server needs the same flag.
 
-A key runs 60 tools a minute, over REST and MCP together, and an address starts 5 pairings a minute; past that the answer is 429 with `Retry-After`. The address is the `CF-Connecting-IP` header on the agent port, so that port must be reached only through Cloudflare, which sets it; anyone who reaches it directly can choose their address. A PDF has up to 2000 pages. An upload or a result that does not fit in `MAX_DISK_MB` gives 507. At start and every 10 minutes the server deletes expired files, files without a row, rows without a file and leftovers older than an hour in `partial/` and `work/`.
+A key runs 60 tools a minute, over REST and MCP together, and an address starts 5 pairings a minute; past that the answer is 429 with `Retry-After`. The address is the last entry of `X-Forwarded-For` on the agent port, which Tailscale Serve appends; `CF-Connecting-IP` is ignored, since Serve passes it through as the agent sent it. The agent port must be reached only through Serve, because anyone who reaches it directly can choose their address. A PDF has up to 2000 pages. An upload or a result that does not fit in `MAX_DISK_MB` gives 507. At start and every 10 minutes the server deletes expired files, files without a row, rows without a file and leftovers older than an hour in `partial/` and `work/`.
 
 Each tool job runs in its own process, started through `setpriv --pdeathsig KILL` from util-linux, so the kernel kills it if the server dies. The server kills a job at 256 MB of RSS or after 30 s, runs 2 at a time and queues 10 more. Without `setpriv` on the `PATH` every job fails with `crashed`.
 
