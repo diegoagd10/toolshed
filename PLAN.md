@@ -202,32 +202,34 @@ T1 y T3 son independientes y salen de `main`. T4 y T6 tocan `src/main.ts`: entra
 **Cambio:** stack de Docker Compose en `<servidor>`. El 4401 va por el proxy de la red local en `<ADMIN_URL>`. El 4400 queda en `127.0.0.1`.
 **Resultado:** abres el dashboard en tu red o por VPN.
 
-- [ ] **Antes:** RAM, disco y puertos libres en el servidor. Copia de la configuración del proxy antes de editarla.
-- [ ] **Unit:** `docker compose config -q` sin variables faltantes. `.env` con permisos 600 y fuera de git.
-- [ ] **Live:** `curl` al dashboard da 200 con `ssl_verify=0`. Un `/probe-<hora>` aparece en los logs.
-- [ ] **Live:** desde otro equipo de la red, el puerto 4400 no responde.
+Desplegado en svc-01: el dashboard en `https://toolshed.local.dagdappshub.com`, por Traefik y la red `traefik-public` en lugar del 4401 publicado en la IP de la LAN.
+
+- [x] **Antes:** RAM, disco y puertos libres en el servidor. Copia de la configuración del proxy antes de editarla.
+- [x] **Unit:** `docker compose config -q` sin variables faltantes. `.env` con permisos 600 y fuera de git.
+- [x] **Live:** `curl` al dashboard da 200 con `ssl_verify=0`. Un `/probe-<hora>` aparece en los logs.
+- [x] **Live:** desde otro equipo de la red, el puerto 4400 no responde.
 - [ ] **Live:** reinicio del servidor cuando tú lo decidas. `toolshed` vuelve solo.
-- [ ] **Perf:** memoria en reposo y unión de dos PDFs de 10 MB en el servidor. Falla arriba de 120 MB o 2 s.
-- [ ] **Vuelta atrás probada:** `docker compose stop` y quitar la ruta. Los demás servicios siguen respondiendo.
+- [x] **Perf:** memoria en reposo y unión de dos PDFs de 10 MB en el servidor. Falla arriba de 120 MB o 2 s.
+- [x] **Vuelta atrás probada:** `docker compose stop` y quitar la ruta. Los demás servicios siguen respondiendo.
 
 ## T11. Tailscale y Grok Bot
 
 **Depende de:** T10. **Archivos:** `compose.yml`, `tailscale/serve.json`, `.env.example`, `src/pair/`, `scripts/pair.ts`, `README.md`. **Espera tu aprobación escrita.**
-**Cambio:** un contenedor `tailscale/tailscale` en el compose, con su propio nodo `toolshed` y `tag:toolshed`, que entra con un auth key. Tailscale Serve da HTTPS en `<PUBLIC_URL>` = `https://toolshed.<tailnet>.ts.net` solo dentro del tailnet, con Funnel apagado, y pasa a `http://toolshed:4400`. El 4400 deja de publicarse en el host. `/pair` toma la IP de `X-Forwarded-For`, que Serve reescribe, y deja de leer `CF-Connecting-IP`, que Serve deja pasar tal cual. En el panel de Tailscale creas el auth key, agregas los grants y le pones `tag:agent` al equipo de Grok Bot.
+**Cambio:** un contenedor `tailscale/tailscale` en el compose, con su propio nodo `toolshed` y `tag:toolshed`, que entra con un auth key. Tailscale Serve da HTTPS en `<PUBLIC_URL>` = `https://toolshed.<tailnet>.ts.net` solo dentro del tailnet, con Funnel apagado, y pasa a `http://toolshed:4400`. El 4400 deja de publicarse en el host. `/pair` toma la IP de `X-Forwarded-For`, que Serve reescribe, y deja de leer `CF-Connecting-IP`, que Serve deja pasar tal cual. En el panel de Tailscale creas el auth key, agregas los grants y le pones `tag:grokbot` al equipo de Grok Bot.
 **Resultado:** Claude Code, Codex y Grok Bot usan toolshed por MCP, y nada queda en internet.
 
-- [ ] **Antes:** copia de la política del tailnet. La nueva quita la regla «todos a todos», agrega `tagOwners` para `tag:toolshed` y `tag:agent`, y deja que `autogroup:member` y `tag:agent` lleguen solo a `tag:toolshed:443`. Sus `tests` comprueban que tu laptop y tu teléfono siguen llegando a svc-01 y svc-02. El auth key no es efímero y va en `.env` con permisos 600.
-- [ ] **Unit:** con un `CF-Connecting-IP` distinto en cada pedido, el sexto `/pair` desde el mismo `X-Forwarded-For` da 429. Otro `X-Forwarded-For` sigue pasando.
-- [ ] **Unit:** `docker compose config -q` termina en 0 y `serve.json` tiene `AllowFunnel` en `false`.
-- [ ] **Live:** `tailscale serve status` en el contenedor dice `tailnet only`, y `ss -tln` en el servidor no muestra el 4400.
-- [ ] **Live:** desde fuera del tailnet, el DNS público no resuelve `<PUBLIC_URL>` y un fetch externo falla. Desde el tailnet, `/llms.txt` da 200, `/mcp` sin key da 401, y `/`, `/keys` y `/login` dan 404.
-- [ ] **Live:** Claude Code (`claude mcp add --transport http`) y Codex (`mcp_servers.toolshed` en `config.toml`) unen dos PDFs reales. Activity muestra cada key con `mcp`.
-- [ ] **Live:** Grok Bot se conecta con código y, por MCP, pide un QR y une dos PDFs de `/workspace`. Activity muestra las llamadas con el key "Grok Bot" y `mcp`. Prueba también agregarlo como conector propio con el header `Authorization`.
-- [ ] **Live:** desde Grok Bot, `<PUBLIC_URL>/health` da 200, y `svc-01` en los puertos 80 y 22 y `svc-02` en el 8096, por su nombre `.ts.net`, dejan de responder. Si su integración deja de funcionar con el tag, se le quita y se anota.
-- [ ] **Live:** revoca el key de Grok Bot. La siguiente llamada falla y Claude Code sigue funcionando.
-- [ ] **Live:** repite la conexión con código por Serve. La espera de 25 s no se corta.
-- [ ] **Perf:** subida de 45 MB y 20 `/health` por Serve. Falla si la subida se corta o el p50 pasa de 500 ms.
-- [ ] **Vuelta atrás probada:** `docker compose stop ts` corta a los agentes y el dashboard sigue. Restaurar la política anterior devuelve el acceso que tenías.
+- [x] **Antes:** copia de la política del tailnet. La nueva quita la regla «todos a todos», agrega `tagOwners` para `tag:toolshed` y `tag:agent`, y deja que `autogroup:member` y `tag:agent` lleguen solo a `tag:toolshed:443`. Sus `tests` comprueban que tu laptop y tu teléfono siguen llegando a svc-01 y svc-02. El auth key no es efímero y va en `.env` con permisos 600.
+- [x] **Unit:** con un `CF-Connecting-IP` distinto en cada pedido, el sexto `/pair` desde el mismo `X-Forwarded-For` da 429. Otro `X-Forwarded-For` sigue pasando.
+- [x] **Unit:** `docker compose config -q` termina en 0 y `serve.json` tiene `AllowFunnel` en `false`.
+- [x] **Live:** `tailscale serve status` en el contenedor dice `tailnet only`, y `ss -tln` en el servidor no muestra el 4400.
+- [x] **Live:** desde fuera del tailnet, el DNS público no resuelve `<PUBLIC_URL>` y un fetch externo falla. Desde el tailnet, `/llms.txt` da 200, `/mcp` sin key da 401, y `/`, `/keys` y `/login` dan 404.
+- [x] **Live:** Claude Code (`claude mcp add --transport http`) y Codex (`mcp_servers.toolshed` en `config.toml`) unen dos PDFs reales. Activity muestra cada key con `mcp`.
+- [x] **Live:** Grok Bot se conecta con código y, por MCP, pide un QR y une dos PDFs de `/workspace`. Activity muestra las llamadas con el key "Grok Bot" y `mcp`. Prueba también agregarlo como conector propio con el header `Authorization`.
+- [x] **Live:** desde Grok Bot, `<PUBLIC_URL>/health` da 200, y `svc-01` en los puertos 80 y 22 y `svc-02` en el 8096, por su nombre `.ts.net`, dejan de responder. Si su integración deja de funcionar con el tag, se le quita y se anota. Se anotó: Grok Bot cierra la sesión de un equipo con `tag:agent` y solo acepta `tag:grokbot` o ningún tag, así que lleva `tag:grokbot` con los mismos grants y tests que `tag:agent`. Su `svc-01:22 abierto` lo contestó su proxy: sshd no registró ninguna conexión suya y no hay banner.
+- [x] **Live:** revoca el key de Grok Bot. La siguiente llamada falla y Claude Code sigue funcionando.
+- [x] **Live:** repite la conexión con código por Serve. La espera de 25 s no se corta.
+- [x] **Perf:** subida de 45 MB y 20 `/health` por Serve. Falla si la subida se corta o el p50 pasa de 500 ms.
+- [ ] **Vuelta atrás probada:** `docker compose stop ts` corta a los agentes y el dashboard sigue. Restaurar la política anterior devuelve el acceso que tenías. La primera mitad está probada; restaurar la política no se probó.
 
 **Prototipo del 27 nov 2026 en svc-01, ya borrado:**
 - Claude Code, Codex CLI y Grok Bot usaron `qr_create`, `file_upload`, `pdf_merge` y `pdf_split` por MCP a través del tailnet.
@@ -248,8 +250,5 @@ T1 y T3 son independientes y salen de `main`. T4 y T6 tocan `src/main.ts`: entra
 
 ## Lo que este plan no prueba
 
-- Grok Bot como conector MCP propio, con el header. Él dice que puede, pero el prototipo usó `curl` desde su shell. Se sabe en T11.
-- Que la integración de Grok Bot siga funcionando con `tag:agent`. Se sabe en T11.
-- La velocidad en `<servidor>`. Los números vienen de un equipo con 24 núcleos.
 - PDFs que aprovechen fallas de seguridad de `pdf-lib`. El proceso hijo limita memoria y tiempo, pero no bloquea red ni archivos.
 - Los topes de 60 llamadas, 5 GB y 24 h son una propuesta, no una medición.
