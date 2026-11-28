@@ -208,7 +208,7 @@ Desplegado en svc-01: el dashboard en `https://toolshed.local.dagdappshub.com`, 
 - [x] **Unit:** `docker compose config -q` sin variables faltantes. `.env` con permisos 600 y fuera de git.
 - [x] **Live:** `curl` al dashboard da 200 con `ssl_verify=0`. Un `/probe-<hora>` aparece en los logs.
 - [x] **Live:** desde otro equipo de la red, el puerto 4400 no responde.
-- [ ] **Live:** reinicio del servidor cuando tú lo decidas. `toolshed` vuelve solo.
+- [x] **Live:** reinicio del servidor cuando tú lo decidas. `toolshed` vuelve solo.
 - [x] **Perf:** memoria en reposo y unión de dos PDFs de 10 MB en el servidor. Falla arriba de 120 MB o 2 s.
 - [x] **Vuelta atrás probada:** `docker compose stop` y quitar la ruta. Los demás servicios siguen respondiendo.
 
@@ -229,7 +229,7 @@ Desplegado en svc-01: el dashboard en `https://toolshed.local.dagdappshub.com`, 
 - [x] **Live:** revoca el key de Grok Bot. La siguiente llamada falla y Claude Code sigue funcionando.
 - [x] **Live:** repite la conexión con código por Serve. La espera de 25 s no se corta.
 - [x] **Perf:** subida de 45 MB y 20 `/health` por Serve. Falla si la subida se corta o el p50 pasa de 500 ms.
-- [ ] **Vuelta atrás probada:** `docker compose stop ts` corta a los agentes y el dashboard sigue. Restaurar la política anterior devuelve el acceso que tenías. La primera mitad está probada; restaurar la política no se probó.
+- [x] **Vuelta atrás probada:** `docker compose stop ts` corta a los agentes y el dashboard sigue. Restaurar la política anterior devuelve el acceso que tenías.
 
 **Prototipo del 27 nov 2026 en svc-01, ya borrado:**
 - Claude Code, Codex CLI y Grok Bot usaron `qr_create`, `file_upload`, `pdf_merge` y `pdf_split` por MCP a través del tailnet.
