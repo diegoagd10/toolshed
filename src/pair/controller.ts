@@ -22,6 +22,16 @@ const tokenRequest = z.strictObject({
     .default(maxWaitSeconds),
 })
 
+// This port is reached through Tailscale Serve, which appends the client's address to
+// X-Forwarded-For. Entries before the last one come from the client, so only the last is trusted.
+function clientAddress(request: Request) {
+  const forwarded = request.get('x-forwarded-for')
+    ?.split(',')
+    .at(-1)
+    ?.trim()
+  return forwarded || String(request.socket.remoteAddress)
+}
+
 @Controller('pair')
 export class PairController {
   readonly #context: PairContext
@@ -33,8 +43,7 @@ export class PairController {
   @Post()
   @HttpCode(200)
   start(@Body() body: unknown, @Req() request: Request) {
-    // This port is reached through Cloudflare, which sets the header to the client's address.
-    const ip = request.get('cf-connecting-ip') ?? String(request.socket.remoteAddress)
+    const ip = clientAddress(request)
     const { starts } = this.#context
     const wait = starts.take(ip)
     if (wait > 0) {

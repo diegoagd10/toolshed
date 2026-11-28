@@ -1,0 +1,7 @@
+# The e2e run reaches the agent port from the host and needs no tailnet.
+services:
+  toolshed:
+    ports:
+      - 127.0.0.1:${AGENT_HOST_PORT:?}:4400
+  ts:
+    profiles: [tailnet]

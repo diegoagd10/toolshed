@@ -79,7 +79,7 @@ function approve(code: string, at = server, session = cookie) {
   return form(at.admin, '/pair/approve', [['code', code]], adminUrl, session)
 }
 
-// Each agent has its own address, as Cloudflare reports it, unless a test says otherwise.
+// Each agent has its own address, as Tailscale Serve reports it, unless a test says otherwise.
 let addresses = 0
 function address() {
   addresses++
@@ -88,7 +88,7 @@ function address() {
 
 function json(port: number, path: string, body: unknown, ip: string | null = address()) {
   const headers = new Headers({ 'Content-Type': 'application/json' })
-  if (ip !== null) headers.set('CF-Connecting-IP', ip)
+  if (ip !== null) headers.set('X-Forwarded-For', ip)
   return fetch(`http://localhost:${port}${path}`, { method: 'POST', headers, body: JSON.stringify(body) })
 }
 
@@ -234,7 +234,41 @@ test('an address starts at most 5 pairings a minute, and another address still c
   await start('another address')
 })
 
-test('without the Cloudflare header the limit applies to the connecting address', async () => {
+// These start many pairs, so each test has a server of its own and the cap on waiting agents
+// does not reach the other tests.
+function pairFrom(at: Server, headers: HeadersInit) {
+  return fetch(`http://localhost:${at.agent}/pair`, {
+    method: 'POST',
+    headers: [['Content-Type', 'application/json'], ...new Headers(headers)],
+    body: JSON.stringify({ agent: 'header agent' }),
+  })
+}
+
+test('a CF-Connecting-IP of its own does not let an agent skip the limit of its address', async () => {
+  const other = await startServer()
+  const ip = address()
+  const statuses = []
+  for (let attempt = 0; attempt < 6; attempt++) {
+    statuses.push((await pairFrom(other, { 'X-Forwarded-For': ip, 'CF-Connecting-IP': address() })).status)
+  }
+  assert.deepEqual(statuses, [200, 200, 200, 200, 200, 429])
+  const another = { 'X-Forwarded-For': address(), 'CF-Connecting-IP': address() }
+  assert.equal((await pairFrom(other, another)).status, 200)
+  await other.stop()
+})
+
+test('only the last X-Forwarded-For entry counts, since Serve appends it after what the agent sent', async () => {
+  const other = await startServer()
+  const ip = address()
+  const statuses = []
+  for (let attempt = 0; attempt < 6; attempt++) {
+    statuses.push((await pairFrom(other, { 'X-Forwarded-For': `${address()}, ${ip}` })).status)
+  }
+  assert.deepEqual(statuses, [200, 200, 200, 200, 200, 429])
+  await other.stop()
+})
+
+test('without the X-Forwarded-For header the limit applies to the connecting address', async () => {
   const statuses = []
   for (let attempt = 0; attempt < 6; attempt++) {
     statuses.push((await json(server.agent, '/pair', { agent: 'direct' }, null)).status)
